@@ -31,11 +31,17 @@ function fmt(value, decimals) {
   return Number(value).toFixed(decimals).padStart(decimals + 3, "0");
 }
 
-// Accetta sia "5.5" che "5,5" (tastiera italiana).
+// Accetta sia "5.5" che "5,5" (tastiera italiana). Rifiuta tutto il resto
+// invece di "interpretare alla meglio" un testo malformato: parseFloat da
+// solo accetterebbe anche un valore rimasto concatenato col precedente
+// (es. "6,505.50" se il cursore non era a inizio/fine campo), applicando
+// silenziosamente un numero vicino ma sbagliato.
 function parseLocaleFloat(str) {
-  if (str === "" || str == null) return null;
-  const n = parseFloat(String(str).replace(",", "."));
-  return Number.isNaN(n) ? null : n;
+  if (str == null) return null;
+  const trimmed = String(str).trim();
+  if (trimmed === "") return null;
+  if (!/^-?\d+([.,]\d+)?$/.test(trimmed)) return NaN;
+  return parseFloat(trimmed.replace(",", "."));
 }
 
 function updateChannel(ch, data, otherData, setpointSeq, trackMode, locked) {
@@ -214,9 +220,22 @@ function wireControls() {
     const iInput = ctrl.querySelector(".set-i");
     const applyBtn = ctrl.querySelector(".apply");
 
+    // Seleziona tutto il testo al focus: senza questo, digitare su un campo
+    // già valorizzato inserisce i nuovi caratteri nel valore esistente
+    // invece di sostituirlo (es. "6,50" cliccato a inizio campo con "5.50"
+    // già presente diventa "6,505.50", che viene poi interpretato come un
+    // valore vicino ma sbagliato invece di essere rifiutato).
+    [vInput, iInput].forEach((input) => {
+      input.addEventListener("focus", () => input.select());
+    });
+
     const doApply = async () => {
       const v = parseLocaleFloat(vInput.value);
       const i = parseLocaleFloat(iInput.value);
+      if (Number.isNaN(v) || Number.isNaN(i)) {
+        alert("Valore non valido nel campo Tensione o Corrente: correggilo prima di premere SET.");
+        return;
+      }
       const pending = pendingSetpoint[ch];
       if (v !== null) {
         pending.v = lastSetpointSeq;
