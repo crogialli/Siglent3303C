@@ -26,11 +26,12 @@ DATA_DIR = os.path.join(APP_DIR, "data")
 STATIC_DIR = os.path.join(APP_DIR, "static")
 os.makedirs(DATA_DIR, exist_ok=True)
 
-POLL_INTERVAL_S = 1.0
-HISTORY_LEN = 900  # 15 minuti a 1 campione/s
+FAST_POLL_PAUSE_S = 0.02  # pausa tra un ciclo di misura e il successivo (oltre al tempo delle query stesse)
+SETPOINT_POLL_INTERVAL_S = 1.0  # i setpoint cambiano solo per azione utente/pannello, non serve leggerli spesso
+HISTORY_LEN = 1500
 PORT = 8420
 
-instrument = SPD3303C()
+instrument = SPD3303C(io_delay=0.035)
 
 state_lock = threading.Lock()
 state = {
@@ -39,6 +40,8 @@ state = {
     "error": None,
     "timestamp": None,
     "track_mode": "unknown",
+    "meas_seq": 0,      # incrementato a ogni campionamento di tensione/corrente misurate
+    "setpoint_seq": 0,  # incrementato a ogni campionamento dei setpoint V/I
     "channels": {
         1: {"v_meas": 0.0, "i_meas": 0.0, "v_set": 0.0, "i_set": 0.0, "mode": "CV", "on": False},
         2: {"v_meas": 0.0, "i_meas": 0.0, "v_set": 0.0, "i_set": 0.0, "mode": "CV", "on": False},
@@ -62,6 +65,7 @@ def _open_log_file():
 
 
 def poll_loop():
+    """Ciclo veloce: solo stato + tensione/corrente misurate (nessun comando)."""
     global _log_file, _log_writer
     while True:
         try:
@@ -69,13 +73,11 @@ def poll_loop():
                 instrument.connect()
             status = instrument.get_status()
             ts = datetime.now().isoformat(timespec="seconds")
-            snapshot = {}
+            meas = {}
             for ch in (1, 2):
-                snapshot[ch] = {
+                meas[ch] = {
                     "v_meas": instrument.measure_voltage(ch),
                     "i_meas": instrument.measure_current(ch),
-                    "v_set": instrument.get_setpoint_voltage(ch),
-                    "i_set": instrument.get_setpoint_current(ch),
                     "mode": status[f"ch{ch}_mode"],
                     "on": status[f"ch{ch}_on"],
                 }
@@ -85,35 +87,61 @@ def poll_loop():
                 state["idn"] = instrument.idn
                 state["timestamp"] = ts
                 state["track_mode"] = status["track_mode"]
-                state["channels"][1] = snapshot[1]
-                state["channels"][2] = snapshot[2]
+                state["meas_seq"] += 1
+                for ch in (1, 2):
+                    state["channels"][ch].update(meas[ch])
                 state["logging"] = _logging_flag.is_set()
                 history.append({
                     "t": ts,
-                    "ch1_v": snapshot[1]["v_meas"], "ch1_i": snapshot[1]["i_meas"],
-                    "ch2_v": snapshot[2]["v_meas"], "ch2_i": snapshot[2]["i_meas"],
+                    "ch1_v": meas[1]["v_meas"], "ch1_i": meas[1]["i_meas"],
+                    "ch2_v": meas[2]["v_meas"], "ch2_i": meas[2]["i_meas"],
                 })
                 if _logging_flag.is_set() and _log_writer:
                     _log_writer.writerow([
                         ts,
-                        snapshot[1]["v_meas"], snapshot[1]["i_meas"], snapshot[1]["mode"], snapshot[1]["on"],
-                        snapshot[2]["v_meas"], snapshot[2]["i_meas"], snapshot[2]["mode"], snapshot[2]["on"],
+                        meas[1]["v_meas"], meas[1]["i_meas"], meas[1]["mode"], meas[1]["on"],
+                        meas[2]["v_meas"], meas[2]["i_meas"], meas[2]["mode"], meas[2]["on"],
                     ])
                     _log_file.flush()
         except SPD3303CError as e:
             with state_lock:
                 state["connected"] = False
                 state["error"] = str(e)
+            time.sleep(0.5)  # evita di martellare l'hardware/USB se scollegato
         except Exception as e:
             with state_lock:
                 state["connected"] = False
                 state["error"] = f"Errore inatteso: {e}"
-        time.sleep(POLL_INTERVAL_S)
+            time.sleep(0.5)
+        time.sleep(FAST_POLL_PAUSE_S)
+
+
+def poll_setpoints_loop():
+    """Ciclo lento: legge i setpoint V/I (cambiano solo per comando o pannello fisico)."""
+    while True:
+        time.sleep(SETPOINT_POLL_INTERVAL_S)
+        if not instrument.connected:
+            continue
+        try:
+            setpoints = {
+                ch: {
+                    "v_set": instrument.get_setpoint_voltage(ch),
+                    "i_set": instrument.get_setpoint_current(ch),
+                }
+                for ch in (1, 2)
+            }
+        except SPD3303CError:
+            continue  # il ciclo veloce si accorgerà della disconnessione
+        with state_lock:
+            state["setpoint_seq"] += 1
+            for ch in (1, 2):
+                state["channels"][ch].update(setpoints[ch])
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     threading.Thread(target=poll_loop, daemon=True).start()
+    threading.Thread(target=poll_setpoints_loop, daemon=True).start()
     yield
 
 
@@ -145,6 +173,18 @@ def _check_channel(ch: int):
         raise HTTPException(400, "Canale non valido (usa 1 o 2)")
 
 
+def _refresh_setpoint(ch: int):
+    """Rilegge subito il setpoint dopo un comando, invece di aspettare il ciclo lento."""
+    try:
+        v_set = instrument.get_setpoint_voltage(ch)
+        i_set = instrument.get_setpoint_current(ch)
+    except SPD3303CError:
+        return
+    with state_lock:
+        state["setpoint_seq"] += 1
+        state["channels"][ch].update({"v_set": v_set, "i_set": i_set})
+
+
 @app.post("/api/channel/{ch}/voltage")
 def set_voltage(ch: int, body: SetValue):
     _check_channel(ch)
@@ -154,6 +194,7 @@ def set_voltage(ch: int, body: SetValue):
         instrument.set_voltage(ch, body.value)
     except SPD3303CError as e:
         raise HTTPException(503, str(e))
+    _refresh_setpoint(ch)
     return {"ok": True}
 
 
@@ -166,6 +207,7 @@ def set_current(ch: int, body: SetValue):
         instrument.set_current(ch, body.value)
     except SPD3303CError as e:
         raise HTTPException(503, str(e))
+    _refresh_setpoint(ch)
     return {"ok": True}
 
 

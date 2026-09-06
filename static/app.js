@@ -1,6 +1,15 @@
-const POLL_MS = 1000;
+const POLL_MS = 400; // il backend campiona misure a ~2.5 volte/sec
 const VOLT_SCALE_MAX = 32;
 const CURRENT_SCALE_MAX = 3.2;
+
+// Per canale: seq del setpoint al momento dell'ultimo SET inviato da qui.
+// Finché state.setpoint_seq non supera questo valore, il campo resta vuoto
+// invece di mostrare il vecchio valore.
+const pendingSetpoint = {
+  1: { v: null, i: null },
+  2: { v: null, i: null },
+};
+let lastSetpointSeq = 0;
 
 const els = {
   connStatus: document.getElementById("conn-status"),
@@ -23,7 +32,7 @@ function parseLocaleFloat(str) {
   return Number.isNaN(n) ? null : n;
 }
 
-function updateChannel(ch, data) {
+function updateChannel(ch, data, setpointSeq) {
   document.getElementById(`v-${ch}`).textContent = fmt(data.v_meas, 2);
   document.getElementById(`i-${ch}`).textContent = fmt(data.i_meas, 3);
   const limiting = data.on && data.mode === "CC";
@@ -42,8 +51,15 @@ function updateChannel(ch, data) {
 
   const vInput = ctrl.querySelector(".set-v");
   const iInput = ctrl.querySelector(".set-i");
-  if (document.activeElement !== vInput) vInput.value = data.v_set.toFixed(2);
-  if (document.activeElement !== iInput) iInput.value = data.i_set.toFixed(3);
+  const pending = pendingSetpoint[ch];
+
+  // Una volta arrivato un campionamento più recente del comando inviato,
+  // il valore mostrato è di nuovo affidabile.
+  if (pending.v !== null && setpointSeq > pending.v) pending.v = null;
+  if (pending.i !== null && setpointSeq > pending.i) pending.i = null;
+
+  if (document.activeElement !== vInput && pending.v === null) vInput.value = data.v_set.toFixed(2);
+  if (document.activeElement !== iInput && pending.i === null) iInput.value = data.i_set.toFixed(3);
 }
 
 function updateCh3(ch3On) {
@@ -71,8 +87,9 @@ async function refreshStatus() {
       els.connStatus.className = "err";
     }
     els.trackMode.textContent = `Modalità: ${data.track_mode}`;
-    updateChannel(1, data.channels["1"]);
-    updateChannel(2, data.channels["2"]);
+    lastSetpointSeq = data.setpoint_seq;
+    updateChannel(1, data.channels["1"], data.setpoint_seq);
+    updateChannel(2, data.channels["2"], data.setpoint_seq);
     updateCh3(data.ch3_on);
 
     els.logToggle.textContent = data.logging ? "Ferma log" : "Avvia log";
@@ -150,7 +167,10 @@ function wireControls() {
     const doApply = async () => {
       const v = parseLocaleFloat(vInput.value);
       const i = parseLocaleFloat(iInput.value);
+      const pending = pendingSetpoint[ch];
       if (v !== null) {
+        pending.v = lastSetpointSeq;
+        vInput.value = "";
         await fetch(`/api/channel/${ch}/voltage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -158,6 +178,8 @@ function wireControls() {
         });
       }
       if (i !== null) {
+        pending.i = lastSetpointSeq;
+        iInput.value = "";
         await fetch(`/api/channel/${ch}/current`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -212,4 +234,4 @@ wireControls();
 refreshStatus();
 refreshHistoryAndDraw();
 setInterval(refreshStatus, POLL_MS);
-setInterval(refreshHistoryAndDraw, 2000);
+setInterval(refreshHistoryAndDraw, 800);
