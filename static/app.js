@@ -33,19 +33,36 @@ function parseLocaleFloat(str) {
   return Number.isNaN(n) ? null : n;
 }
 
-function updateChannel(ch, data, setpointSeq, trackMode) {
+function updateChannel(ch, data, otherData, setpointSeq, trackMode) {
   document.getElementById(`v-${ch}`).textContent = fmt(data.v_meas, 2);
   document.getElementById(`i-${ch}`).textContent = fmt(data.i_meas, 3);
-  const limiting = data.on && data.mode === "CC";
+
+  const isParallel = trackMode === "parallel";
+
+  // In parallelo il secondo LED di CH2 è etichettato sul pannello "C.C.PAR":
+  // non indica che CH2 sta limitando la corrente, ma solo che il parallelo
+  // è attivo. La vera limitazione, condivisa da entrambi i canali, si legge
+  // sempre dal bit di CH1.
+  const limitingSource = (ch === 2 && isParallel) ? otherData : data;
+  const limiting = limitingSource.on && limitingSource.mode === "CC";
+
   const led = document.getElementById(`led-${ch}`);
   led.classList.remove("on", "off", "limit");
   led.classList.add(!data.on ? "off" : (limiting ? "limit" : "on"));
-  led.title = `${data.on ? "ON" : "OFF"} (${data.mode})`;
+  led.title = (ch === 2 && isParallel)
+    ? (data.on ? "ON (parallelo)" : "OFF")
+    : `${data.on ? "ON" : "OFF"} (${data.mode})`;
 
   const stateText = document.getElementById(`state-${ch}`);
-  stateText.textContent = data.on ? "ACCESO" : "SPENTO";
-  stateText.classList.toggle("on", data.on);
-  stateText.classList.toggle("off", !data.on);
+  if (ch === 2 && isParallel && data.on) {
+    stateText.textContent = "PARALLELO";
+    stateText.classList.add("on");
+    stateText.classList.remove("off");
+  } else {
+    stateText.textContent = data.on ? "ACCESO" : "SPENTO";
+    stateText.classList.toggle("on", data.on);
+    stateText.classList.toggle("off", !data.on);
+  }
 
   document.getElementById(`limit-${ch}`).classList.toggle("show", limiting);
 
@@ -67,15 +84,17 @@ function updateChannel(ch, data, setpointSeq, trackMode) {
   if (document.activeElement !== vInput && pending.v === null) vInput.value = data.v_set.toFixed(2);
   if (document.activeElement !== iInput && pending.i === null) iInput.value = data.i_set.toFixed(3);
 
-  // In modalità series, CH2 segue CH1 e non ha impostazioni proprie:
-  // i controlli restano visibili ma disattivati.
+  // In series e parallel, CH2 segue CH1 e non ha impostazioni proprie
+  // (verificato: stesso setpoint di CH1 su entrambe le modalità).
   if (ch === 2) {
-    const locked = trackMode === "series";
+    const locked = trackMode === "series" || isParallel;
     vInput.disabled = locked;
     iInput.disabled = locked;
     ctrl.querySelector(".apply").disabled = locked;
     outBtn.disabled = locked;
-    document.getElementById("ch2-lock-note").hidden = !locked;
+    const note = document.getElementById("ch2-lock-note");
+    note.hidden = !locked;
+    if (locked) note.textContent = `Controllato da CH1 (modalità ${trackMode}): impostazioni non modificabili da qui.`;
   }
 }
 
@@ -92,8 +111,8 @@ async function refreshStatus() {
     }
     els.trackMode.textContent = `Modalità: ${data.track_mode}`;
     lastSetpointSeq = data.setpoint_seq;
-    updateChannel(1, data.channels["1"], data.setpoint_seq, data.track_mode);
-    updateChannel(2, data.channels["2"], data.setpoint_seq, data.track_mode);
+    updateChannel(1, data.channels["1"], data.channels["2"], data.setpoint_seq, data.track_mode);
+    updateChannel(2, data.channels["2"], data.channels["1"], data.setpoint_seq, data.track_mode);
 
     els.logToggle.textContent = data.logging ? "Ferma log" : "Avvia log";
     els.logToggle.classList.toggle("active", data.logging);
