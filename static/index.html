@@ -76,8 +76,11 @@
 
     <div class="log-bar">
       <button id="log-toggle">Avvia log</button>
-      <button id="log-dir-btn" title="Scegli la cartella di destinazione dei file di log">Cartella log&hellip;</button>
-      <span id="log-dir-path"></span>
+      <label class="log-dir-field">
+        Cartella log
+        <input type="text" id="log-dir-input" spellcheck="false" placeholder="/percorso/della/cartella" />
+      </label>
+      <button id="log-dir-apply">Applica</button>
       <span id="log-file"></span>
     </div>
 

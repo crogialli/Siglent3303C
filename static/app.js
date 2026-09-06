@@ -21,8 +21,8 @@ const els = {
   ch3Off: document.getElementById("ch3-off"),
   ch3On: document.getElementById("ch3-on"),
   masterOn: document.getElementById("master-on"),
-  logDirBtn: document.getElementById("log-dir-btn"),
-  logDirPath: document.getElementById("log-dir-path"),
+  logDirInput: document.getElementById("log-dir-input"),
+  logDirApply: document.getElementById("log-dir-apply"),
 };
 
 const LOCK_NOTE_TEXT = "Tastiera dell'alimentatore bloccata [LOCK]";
@@ -137,12 +137,13 @@ async function refreshStatus() {
 
     // CH3 non è verificabile via USB: il pulsante riflette solo CH1+CH2.
     const allOn = data.channels["1"].on && data.channels["2"].on;
+    els.masterOn.textContent = allOn ? "SPEGNI TUTTE LE USCITE" : "ACCENDI TUTTE LE USCITE";
     els.masterOn.classList.toggle("all-on", allOn);
     els.masterOn.disabled = data.locked;
 
     els.logToggle.textContent = data.logging ? "Ferma log" : "Avvia log";
     els.logToggle.classList.toggle("active", data.logging);
-    els.logDirPath.textContent = data.log_dir || "";
+    if (document.activeElement !== els.logDirInput) els.logDirInput.value = data.log_dir || "";
   } catch (e) {
     els.connStatus.textContent = "Server non raggiungibile";
     els.connStatus.className = "err";
@@ -271,30 +272,38 @@ function wireControls() {
   els.ch3On.addEventListener("click", () => sendCh3(true));
 
   els.masterOn.addEventListener("click", async () => {
-    if (!confirm("Confermi di voler accendere tutte e tre le uscite (CH1, CH2, CH3)?")) return;
-    await Promise.all([
-      fetch(`/api/channel/1/output`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on: true }),
-      }),
-      fetch(`/api/channel/2/output`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on: true }),
-      }),
-      fetch(`/api/channel/3/output`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on: true }),
-      }),
-    ]);
+    const turningOn = !els.masterOn.classList.contains("all-on");
+    const action = turningOn ? "accendere" : "spegnere";
+    if (!confirm(`Confermi di voler ${action} tutte e tre le uscite (CH1, CH2, CH3)?`)) return;
+    const body = JSON.stringify({ on: turningOn });
+    await Promise.all([1, 2, 3].map((ch) => fetch(`/api/channel/${ch}/output`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body,
+    })));
     refreshStatus();
   });
 
-  els.logDirBtn.addEventListener("click", async () => {
-    els.logDirBtn.disabled = true;
+  els.logDirApply.addEventListener("click", async () => {
+    const path = els.logDirInput.value.trim();
+    if (!path) return;
+    els.logDirApply.disabled = true;
     try {
-      const res = await fetch("/api/log/choose-directory", { method: "POST" });
+      const res = await fetch("/api/log/directory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path }),
+      });
       const data = await res.json();
-      if (data.ok) els.logDirPath.textContent = data.directory;
+      if (!res.ok) {
+        alert(data.detail || "Cartella non valida");
+        return;
+      }
+      els.logDirInput.value = data.directory;
     } finally {
-      els.logDirBtn.disabled = false;
+      els.logDirApply.disabled = false;
     }
+  });
+  els.logDirInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); els.logDirApply.click(); }
   });
 
   els.logToggle.addEventListener("click", async () => {

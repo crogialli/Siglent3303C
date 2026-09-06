@@ -7,8 +7,6 @@ Uso:
 
 import csv
 import os
-import platform
-import subprocess
 import threading
 import time
 import webbrowser
@@ -62,40 +60,6 @@ _log_writer = None
 _logging_flag = threading.Event()
 
 
-def _pick_directory_native(initial_dir):
-    """Apre un selettore di cartelle nativo del sistema operativo.
-
-    Usa un processo esterno (osascript/zenity/kdialog) invece di una libreria
-    GUI in-process come tkinter: il server gira in un thread pool (non nel
-    thread principale), e su macOS Tk/Cocoa richiede che le finestre vengano
-    create sul thread principale, quindi si romperebbe qui.
-    """
-    system = platform.system()
-    if system == "Darwin":
-        safe_dir = initial_dir.replace('"', '\\"')
-        script = (
-            'POSIX path of (choose folder with prompt "Scegli cartella per i log" '
-            f'default location POSIX file "{safe_dir}")'
-        )
-        try:
-            result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=120)
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            return None
-        return result.stdout.strip() if result.returncode == 0 else None
-    if system == "Linux":
-        candidates = [
-            ["zenity", "--file-selection", "--directory", "--title=Scegli cartella per i log"],
-            ["kdialog", "--getexistingdirectory", initial_dir],
-        ]
-        for cmd in candidates:
-            try:
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-            except FileNotFoundError:
-                continue
-            if result.returncode == 0 and result.stdout.strip():
-                return result.stdout.strip()
-        return None
-    return None
 
 
 def _open_log_file():
@@ -324,17 +288,30 @@ def logging_control(action: str):
     raise HTTPException(400, "Azione non valida (usa start o stop)")
 
 
-@app.post("/api/log/choose-directory")
-def choose_log_directory():
+class SetLogDir(BaseModel):
+    path: str
+
+
+@app.post("/api/log/directory")
+def set_log_directory(body: SetLogDir):
+    """Imposta la cartella di destinazione dei log da un percorso digitato.
+
+    Niente selettore grafico nativo: dipende dal sistema operativo e dalle
+    librerie installate (provato con AppleScript, poi con tkinter — tkinter
+    va in crash su alcune combinazioni di macOS/Tcl-Tk, es. questa macchina).
+    Un campo di testo funziona identico ovunque, senza dipendenze esterne.
+    """
     global DATA_DIR
     if _logging_flag.is_set():
         raise HTTPException(400, "Ferma il logging prima di cambiare cartella")
-    chosen = _pick_directory_native(DATA_DIR)
-    if not chosen:
-        return {"ok": False, "cancelled": True, "directory": DATA_DIR}
-    if not os.path.isdir(chosen):
-        raise HTTPException(400, f"Cartella non valida: {chosen}")
-    DATA_DIR = chosen
+    path = os.path.expanduser(body.path.strip())
+    if not path:
+        raise HTTPException(400, "Percorso vuoto")
+    if not os.path.isdir(path):
+        raise HTTPException(400, f"Cartella non trovata: {path}")
+    if not os.access(path, os.W_OK):
+        raise HTTPException(400, f"Cartella non scrivibile: {path}")
+    DATA_DIR = path
     with state_lock:
         state["log_dir"] = DATA_DIR
     return {"ok": True, "directory": DATA_DIR}
