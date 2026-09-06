@@ -1,0 +1,198 @@
+:root {
+  --case-bg: #e7e6e2;
+  --case-border: #b9b8b3;
+  --screen-bg: #16161a;
+  --screen-border: #050505;
+  --green-led: #7CFC7C;
+  --red-led: #ff5a4d;
+  --amber: #ffb347;
+  --text-dark: #2b2b2b;
+  --btn-bg: #d8d7d3;
+  --btn-border: #a9a8a3;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 16px;
+  background: #cfcecb;
+  font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  color: var(--text-dark);
+}
+
+.psu {
+  width: 860px;
+  max-width: 100%;
+  background: var(--case-bg);
+  border: 1px solid var(--case-border);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.6);
+  padding: 18px 20px 22px;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0 4px 10px;
+}
+
+.brand-name {
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 1px;
+  background: linear-gradient(90deg, #f5a623, #1e6fd9 55%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.brand-reg { font-size: 10px; vertical-align: super; color: #777; }
+.model { font-size: 13px; color: #666; letter-spacing: 1px; }
+
+.display-panel {
+  background: var(--screen-bg);
+  border: 3px solid var(--screen-border);
+  border-radius: 6px;
+  padding: 16px 24px 10px;
+  display: flex;
+  gap: 24px;
+  position: relative;
+}
+
+.channel-display { flex: 1; }
+
+.channel-label {
+  color: #9a9a9a;
+  font-size: 13px;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.led {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #333;
+  box-shadow: inset 0 0 2px #000;
+}
+.led.cv { background: var(--green-led); box-shadow: 0 0 6px var(--green-led); }
+.led.cc { background: var(--red-led); box-shadow: 0 0 6px var(--red-led); }
+.led::after { content: ""; }
+.mode-led-label {
+  font-size: 10px;
+  color: #9a9a9a;
+  margin-left: 2px;
+}
+
+.row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 2px; }
+
+.digits {
+  font-family: "DSEG7", "Consolas", "Menlo", monospace;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+.digits.volt { color: var(--green-led); text-shadow: 0 0 8px rgba(124,252,124,0.6); }
+.digits.amp { color: var(--red-led); text-shadow: 0 0 8px rgba(255,90,77,0.6); font-size: 28px; }
+.unit { color: #888; font-size: 13px; }
+
+.tagline {
+  position: absolute;
+  bottom: 6px;
+  right: 16px;
+  color: #6b6b6b;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.controls {
+  display: flex;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.channel-control {
+  flex: 1;
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.channel-control h3 { margin: 0 0 8px; font-size: 13px; letter-spacing: 1px; color: #555; }
+.channel-control label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #444;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+.channel-control input {
+  width: 90px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid #b0afaa;
+  font-size: 13px;
+  text-align: right;
+}
+
+.btn-row { display: flex; gap: 8px; margin-top: 10px; }
+
+button {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 7px 14px;
+  border-radius: 5px;
+  border: 1px solid var(--btn-border);
+  background: linear-gradient(180deg, #fdfdfd, #d3d2ce);
+  cursor: pointer;
+  color: #333;
+}
+button:active { transform: translateY(1px); }
+
+.toggle-output.on {
+  background: linear-gradient(180deg, #8fe08f, #45b545);
+  border-color: #2f8a2f;
+  color: #08320c;
+}
+.toggle-output.off {
+  background: linear-gradient(180deg, #e8e7e3, #c7c6c1);
+  color: #666;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 8px 4px;
+  font-size: 12px;
+  color: #555;
+  border-top: 1px solid var(--case-border);
+}
+#conn-status.ok { color: #2f8a2f; font-weight: 600; }
+#conn-status.err { color: #c0392b; font-weight: 600; }
+#log-toggle.active {
+  background: linear-gradient(180deg, #ff9d8f, #e85f4d);
+  color: #3a0e08;
+}
+
+canvas#chart {
+  display: block;
+  width: 100%;
+  height: 160px;
+  margin-top: 14px;
+  background: #101012;
+  border-radius: 6px;
+  border: 1px solid #050505;
+}

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SPD3303C Control</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="psu">
+    <div class="top-bar">
+      <div class="brand"><span class="brand-name">SIGLENT</span><span class="brand-reg">&reg;</span></div>
+      <div class="model">SPD3303C</div>
+    </div>
+
+    <div class="display-panel">
+      <div class="channel-display" id="disp-1">
+        <div class="channel-label">CH1<span class="led mode-led" id="led-1"></span></div>
+        <div class="row"><span class="digits volt" id="v-1">--.--</span><span class="unit">V</span></div>
+        <div class="row"><span class="digits amp" id="i-1">-.---</span><span class="unit">A</span></div>
+      </div>
+      <div class="channel-display" id="disp-2">
+        <div class="channel-label">CH2<span class="led mode-led" id="led-2"></span></div>
+        <div class="row"><span class="digits volt" id="v-2">--.--</span><span class="unit">V</span></div>
+        <div class="row"><span class="digits amp" id="i-2">-.---</span><span class="unit">A</span></div>
+      </div>
+      <div class="tagline">Programmable DC Power Supply &mdash; Web Control</div>
+    </div>
+
+    <div class="controls">
+      <div class="channel-control" data-ch="1">
+        <h3>CH1</h3>
+        <label>Tensione (V)<input type="number" class="set-v" step="0.01" min="0" max="32" /></label>
+        <label>Corrente (A)<input type="number" class="set-i" step="0.001" min="0" max="3.2" /></label>
+        <div class="btn-row">
+          <button class="apply">SET</button>
+          <button class="toggle-output off">OFF</button>
+        </div>
+      </div>
+      <div class="channel-control" data-ch="2">
+        <h3>CH2</h3>
+        <label>Tensione (V)<input type="number" class="set-v" step="0.01" min="0" max="32" /></label>
+        <label>Corrente (A)<input type="number" class="set-i" step="0.001" min="0" max="3.2" /></label>
+        <div class="btn-row">
+          <button class="apply">SET</button>
+          <button class="toggle-output off">OFF</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <span id="conn-status">Connessione...</span>
+      <span id="track-mode"></span>
+      <button id="log-toggle">Avvia log</button>
+      <span id="log-file"></span>
+    </div>
+
+    <canvas id="chart" width="820" height="160"></canvas>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

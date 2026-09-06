@@ -1,0 +1,5 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pyvisa>=1.13
+pyvisa-py>=0.7
+pyusb>=1.2
