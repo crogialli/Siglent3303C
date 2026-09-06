@@ -42,6 +42,30 @@ body {
   padding: 0 4px 10px;
 }
 
+.key-panel {
+  display: flex;
+  gap: 8px;
+  padding: 0 4px 10px;
+}
+.key-indicator {
+  flex: 1;
+  text-align: center;
+  padding: 6px 0;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  color: #9a9a95;
+}
+.key-indicator.active {
+  background: linear-gradient(180deg, #fff3b0, #ffd60a);
+  border-color: #c9a400;
+  color: #4a3b00;
+  box-shadow: 0 0 8px rgba(255, 214, 10, 0.55);
+}
+
 .brand-name {
   font-weight: 700;
   font-size: 20px;
@@ -194,7 +218,7 @@ body {
   flex: 1;
 }
 
-.ch2-lock-note {
+.lock-note {
   font-size: 11px;
   color: #a35b00;
   line-height: 1.4;

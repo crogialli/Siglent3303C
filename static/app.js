@@ -33,7 +33,7 @@ function parseLocaleFloat(str) {
   return Number.isNaN(n) ? null : n;
 }
 
-function updateChannel(ch, data, otherData, setpointSeq, trackMode) {
+function updateChannel(ch, data, otherData, setpointSeq, trackMode, locked) {
   document.getElementById(`v-${ch}`).textContent = fmt(data.v_meas, 2);
   document.getElementById(`i-${ch}`).textContent = fmt(data.i_meas, 3);
 
@@ -84,17 +84,23 @@ function updateChannel(ch, data, otherData, setpointSeq, trackMode) {
   if (document.activeElement !== vInput && pending.v === null) vInput.value = data.v_set.toFixed(2);
   if (document.activeElement !== iInput && pending.i === null) iInput.value = data.i_set.toFixed(3);
 
-  // In series e parallel, CH2 segue CH1 e non ha impostazioni proprie
-  // (verificato: stesso setpoint di CH1 su entrambe le modalità).
-  if (ch === 2) {
-    const locked = trackMode === "series" || isParallel;
-    vInput.disabled = locked;
-    iInput.disabled = locked;
-    ctrl.querySelector(".apply").disabled = locked;
-    outBtn.disabled = locked;
-    const note = document.getElementById("ch2-lock-note");
-    note.hidden = !locked;
-    if (locked) note.textContent = `Controllato da CH1 (modalità ${trackMode}): impostazioni non modificabili da qui.`;
+  // Due motivi indipendenti per cui un canale può non essere comandabile
+  // da qui: tastiera dell'alimentatore bloccata (vale per CH1 e CH2), o
+  // CH2 che segue CH1 in series/parallel (verificato: stesso setpoint di
+  // CH1 su entrambe le modalità).
+  const followsCh1 = ch === 2 && (trackMode === "series" || isParallel);
+  const disabled = locked || followsCh1;
+  vInput.disabled = disabled;
+  iInput.disabled = disabled;
+  ctrl.querySelector(".apply").disabled = disabled;
+  outBtn.disabled = disabled;
+
+  const note = document.getElementById(`lock-note-${ch}`);
+  note.hidden = !disabled;
+  if (locked) {
+    note.textContent = "Tastiera dell'alimentatore bloccata (LOCK): comandi non applicabili da qui.";
+  } else if (followsCh1) {
+    note.textContent = `Controllato da CH1 (modalità ${trackMode}): impostazioni non modificabili da qui.`;
   }
 }
 
@@ -111,8 +117,12 @@ async function refreshStatus() {
     }
     els.trackMode.textContent = `Modalità: ${data.track_mode}`;
     lastSetpointSeq = data.setpoint_seq;
-    updateChannel(1, data.channels["1"], data.channels["2"], data.setpoint_seq, data.track_mode);
-    updateChannel(2, data.channels["2"], data.channels["1"], data.setpoint_seq, data.track_mode);
+    updateChannel(1, data.channels["1"], data.channels["2"], data.setpoint_seq, data.track_mode, data.locked);
+    updateChannel(2, data.channels["2"], data.channels["1"], data.setpoint_seq, data.track_mode, data.locked);
+
+    document.getElementById("key-lock").classList.toggle("active", data.locked);
+    document.getElementById("key-series").classList.toggle("active", data.track_mode === "series");
+    document.getElementById("key-parallel").classList.toggle("active", data.track_mode === "parallel");
 
     els.logToggle.textContent = data.logging ? "Ferma log" : "Avvia log";
     els.logToggle.classList.toggle("active", data.logging);

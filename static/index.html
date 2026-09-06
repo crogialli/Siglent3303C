@@ -13,6 +13,12 @@
       <div class="model">SPD3303C</div>
     </div>
 
+    <div class="key-panel">
+      <div class="key-indicator" id="key-lock" title="Stato lock tastiera (sola lettura)">LOCK</div>
+      <div class="key-indicator" id="key-series" title="Modalità serie (sola lettura)">SERIE</div>
+      <div class="key-indicator" id="key-parallel" title="Modalità parallelo (sola lettura)">PARALLELO</div>
+    </div>
+
     <div class="display-panel">
       <div class="channel-display" id="disp-1">
         <div class="channel-label">CH1<span class="led" id="led-1"></span><span class="state-text" id="state-1"></span><span class="limit-flag" id="limit-1">LIMIT</span></div>
@@ -30,6 +36,7 @@
     <div class="controls">
       <div class="channel-control" data-ch="1">
         <h3>CH1</h3>
+        <p class="lock-note" id="lock-note-1" hidden></p>
         <label>Tensione (V)<input type="text" inputmode="decimal" class="set-v" /></label>
         <label>Limitatore di Corrente (A)<input type="text" inputmode="decimal" class="set-i" /></label>
         <div class="btn-row">
@@ -39,7 +46,7 @@
       </div>
       <div class="channel-control" data-ch="2">
         <h3>CH2</h3>
-        <p class="ch2-lock-note" id="ch2-lock-note" hidden>Controllato da CH1 (modalità series): impostazioni non modificabili da qui.</p>
+        <p class="lock-note" id="lock-note-2" hidden></p>
         <label>Tensione (V)<input type="text" inputmode="decimal" class="set-v" /></label>
         <label>Limitatore di Corrente (A)<input type="text" inputmode="decimal" class="set-i" /></label>
         <div class="btn-row">

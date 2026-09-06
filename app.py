@@ -43,6 +43,7 @@ state = {
     "error": None,
     "timestamp": None,
     "track_mode": "unknown",
+    "locked": False,
     "meas_seq": 0,      # incrementato a ogni campionamento di tensione/corrente misurate
     "setpoint_seq": 0,  # incrementato a ogni campionamento dei setpoint V/I
     "channels": {
@@ -104,6 +105,7 @@ def poll_loop():
                 state["idn"] = instrument.idn
                 state["timestamp"] = ts
                 state["track_mode"] = status["track_mode"]
+                state["locked"] = status["locked"]
                 state["meas_seq"] += 1
                 for ch in (1, 2):
                     state["channels"][ch].update(meas[ch])

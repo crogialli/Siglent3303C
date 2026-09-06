@@ -139,6 +139,11 @@ class SPD3303C:
             "track_mode": _TRACK_MODES.get((val >> 2) & 0x03, "unknown"),
             "ch1_on": bool(val & 0x10),
             "ch2_on": bool(val & 0x20),
+            # Bit non documentato nel manuale, confermato empiricamente:
+            # 0x0400 compare quando la tastiera è bloccata (*LOCK) e sparisce
+            # dopo *UNLOCK, indipendentemente da chi ha comandato il lock
+            # (app o pannello frontale).
+            "locked": bool(val & 0x400),
         }
 
     # --- scritture (comandano l'uscita reale) ---
