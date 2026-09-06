@@ -85,6 +85,15 @@ body {
 .led.off { background: var(--red-led); box-shadow: 0 0 6px var(--red-led); }
 .led.limit { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
 
+.state-text {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-left: 2px;
+}
+.state-text.on { color: var(--green-led); }
+.state-text.off { color: var(--red-led); }
+
 .limit-flag {
   display: none;
   color: var(--amber);
@@ -170,6 +179,11 @@ body {
   outline: 2px solid #1e6fd9;
   outline-offset: 1px;
 }
+.channel-control input:disabled,
+.channel-control button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 .channel-control.ch3 { display: flex; flex-direction: column; }
 .ch3-note {
@@ -178,6 +192,13 @@ body {
   line-height: 1.4;
   margin: 0 0 10px;
   flex: 1;
+}
+
+.ch2-lock-note {
+  font-size: 11px;
+  color: #a35b00;
+  line-height: 1.4;
+  margin: -4px 0 10px;
 }
 
 .btn-row { display: flex; gap: 8px; margin-top: 10px; }

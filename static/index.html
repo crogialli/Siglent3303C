@@ -15,12 +15,12 @@
 
     <div class="display-panel">
       <div class="channel-display" id="disp-1">
-        <div class="channel-label">CH1<span class="led" id="led-1"></span><span class="limit-flag" id="limit-1">LIMIT</span></div>
+        <div class="channel-label">CH1<span class="led" id="led-1"></span><span class="state-text" id="state-1"></span><span class="limit-flag" id="limit-1">LIMIT</span></div>
         <div class="row"><span class="digits volt" id="v-1">--.--</span><span class="unit">V</span></div>
         <div class="row"><span class="digits amp" id="i-1">-.---</span><span class="unit">A</span></div>
       </div>
       <div class="channel-display" id="disp-2">
-        <div class="channel-label">CH2<span class="led" id="led-2"></span><span class="limit-flag" id="limit-2">LIMIT</span></div>
+        <div class="channel-label">CH2<span class="led" id="led-2"></span><span class="state-text" id="state-2"></span><span class="limit-flag" id="limit-2">LIMIT</span></div>
         <div class="row"><span class="digits volt" id="v-2">--.--</span><span class="unit">V</span></div>
         <div class="row"><span class="digits amp" id="i-2">-.---</span><span class="unit">A</span></div>
       </div>
@@ -39,6 +39,7 @@
       </div>
       <div class="channel-control" data-ch="2">
         <h3>CH2</h3>
+        <p class="ch2-lock-note" id="ch2-lock-note" hidden>Controllato da CH1 (modalità series): impostazioni non modificabili da qui.</p>
         <label>Tensione (V)<input type="text" inputmode="decimal" class="set-v" /></label>
         <label>Limitatore di Corrente (A)<input type="text" inputmode="decimal" class="set-i" /></label>
         <div class="btn-row">
