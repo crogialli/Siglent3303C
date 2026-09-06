@@ -223,6 +223,47 @@ def set_output(ch: int, body: SetOutput):
     return {"ok": True}
 
 
+def _refresh_mode_flags():
+    """Rilegge subito lock/track mode dopo un comando, come per i setpoint."""
+    try:
+        status = instrument.get_status()
+    except SPD3303CError:
+        return
+    with state_lock:
+        state["track_mode"] = status["track_mode"]
+        state["locked"] = status["locked"]
+
+
+class SetLock(BaseModel):
+    locked: bool
+
+
+class SetTrack(BaseModel):
+    mode: int
+
+
+@app.post("/api/lock")
+def set_lock(body: SetLock):
+    try:
+        instrument.set_lock(body.locked)
+    except SPD3303CError as e:
+        raise HTTPException(503, str(e))
+    _refresh_mode_flags()
+    return {"ok": True}
+
+
+@app.post("/api/track")
+def set_track(body: SetTrack):
+    if body.mode not in (0, 1, 2):
+        raise HTTPException(400, "Modalità non valida (0=independent, 1=series, 2=parallel)")
+    try:
+        instrument.set_track_mode(body.mode)
+    except SPD3303CError as e:
+        raise HTTPException(503, str(e))
+    _refresh_mode_flags()
+    return {"ok": True}
+
+
 @app.post("/api/logging/{action}")
 def logging_control(action: str):
     global _log_file, _log_writer

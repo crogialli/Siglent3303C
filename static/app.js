@@ -260,6 +260,40 @@ function wireControls() {
     els.logFile.textContent = starting && data.file ? `→ ${data.file}` : "";
     refreshStatus();
   });
+
+  const keyLock = document.getElementById("key-lock");
+  keyLock.addEventListener("click", async () => {
+    const turningOn = !keyLock.classList.contains("active");
+    const action = turningOn ? "bloccare" : "sbloccare";
+    if (!confirm(`Confermi di voler ${action} la tastiera dell'alimentatore?`)) return;
+    await fetch("/api/lock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locked: turningOn }),
+    });
+    refreshStatus();
+  });
+
+  const wireTrackButton = (id, mode, label, warning) => {
+    const btn = document.getElementById(id);
+    btn.addEventListener("click", async () => {
+      const isActive = btn.classList.contains("active");
+      const targetMode = isActive ? 0 : mode;
+      const msg = isActive
+        ? `Confermi di voler disattivare la modalità ${label} e tornare a Independent?`
+        : `Attenzione: la modalità ${label} collega elettricamente CH1 e CH2 (${warning}). ` +
+          "Assicurati che il collegamento esterno sia adatto prima di procedere. Confermi?";
+      if (!confirm(msg)) return;
+      await fetch("/api/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: targetMode }),
+      });
+      refreshStatus();
+    });
+  };
+  wireTrackButton("key-series", 1, "SERIE", "le tensioni si sommano");
+  wireTrackButton("key-parallel", 2, "PARALLELO", "le correnti si sommano");
 }
 
 wireControls();

@@ -53,12 +53,15 @@ body {
   padding: 6px 0;
   border-radius: 5px;
   font-size: 11px;
+  font-family: inherit;
   font-weight: 700;
   letter-spacing: 1px;
   background: var(--btn-bg);
   border: 1px solid var(--btn-border);
   color: #9a9a95;
+  cursor: pointer;
 }
+.key-indicator:active { transform: translateY(1px); }
 .key-indicator.active {
   background: linear-gradient(180deg, #fff3b0, #ffd60a);
   border-color: #c9a400;

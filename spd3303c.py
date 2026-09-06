@@ -160,3 +160,11 @@ class SPD3303C:
 
     def set_output(self, ch, state):
         self.write(f"OUTPut CH{ch},{'ON' if state else 'OFF'}")
+
+    def set_lock(self, locked):
+        self.write("*LOCK" if locked else "*UNLOCK")
+
+    def set_track_mode(self, mode):
+        if mode not in (0, 1, 2):
+            raise SPD3303CError("Modalità non valida (0=independent, 1=series, 2=parallel)")
+        self.write(f"OUTPut:TRACK {mode}")
