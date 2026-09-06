@@ -27,9 +27,9 @@ function updateChannel(ch, data) {
   document.getElementById(`v-${ch}`).textContent = fmt(data.v_meas, 2);
   document.getElementById(`i-${ch}`).textContent = fmt(data.i_meas, 3);
   const led = document.getElementById(`led-${ch}`);
-  led.classList.remove("cv", "cc");
-  led.classList.add(data.mode === "CC" ? "cc" : "cv");
-  led.title = data.mode;
+  led.classList.remove("on", "off");
+  led.classList.add(data.on ? "on" : "off");
+  led.title = `${data.on ? "ON" : "OFF"} (${data.mode})`;
 
   const ctrl = document.querySelector(`.channel-control[data-ch="${ch}"]`);
   const outBtn = ctrl.querySelector(".toggle-output");
@@ -44,15 +44,16 @@ function updateChannel(ch, data) {
 }
 
 function updateCh3(ch3On) {
-  if (ch3On === null || ch3On === undefined) {
-    els.ch3Toggle.textContent = "OFF";
-    els.ch3Toggle.classList.add("off");
-    els.ch3Toggle.classList.remove("on");
-    return;
-  }
-  els.ch3Toggle.textContent = ch3On ? "ON" : "OFF";
-  els.ch3Toggle.classList.toggle("on", ch3On);
-  els.ch3Toggle.classList.toggle("off", !ch3On);
+  const led = document.getElementById("led-3");
+  const isOn = ch3On === true;
+  els.ch3Toggle.textContent = isOn ? "ON" : "OFF";
+  els.ch3Toggle.classList.toggle("on", isOn);
+  els.ch3Toggle.classList.toggle("off", !isOn);
+  led.classList.toggle("on", isOn);
+  led.classList.toggle("off", !isOn);
+  led.title = ch3On === null || ch3On === undefined
+    ? "Stato assunto (mai comandato da qui)"
+    : (isOn ? "ON" : "OFF");
 }
 
 async function refreshStatus() {
