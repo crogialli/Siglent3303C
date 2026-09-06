@@ -46,7 +46,6 @@ state = {
         1: {"v_meas": 0.0, "i_meas": 0.0, "v_set": 0.0, "i_set": 0.0, "mode": "CV", "on": False},
         2: {"v_meas": 0.0, "i_meas": 0.0, "v_set": 0.0, "i_set": 0.0, "mode": "CV", "on": False},
     },
-    "ch3_on": None,  # non leggibile via SCPI: riflette solo l'ultimo comando inviato da qui
     "logging": False,
 }
 history = deque(maxlen=HISTORY_LEN)
@@ -219,9 +218,6 @@ def set_output(ch: int, body: SetOutput):
         instrument.set_output(ch, body.on)
     except SPD3303CError as e:
         raise HTTPException(503, str(e))
-    if ch == 3:
-        with state_lock:
-            state["ch3_on"] = body.on
     return {"ok": True}
 
 

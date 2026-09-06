@@ -18,7 +18,8 @@ const els = {
   logFile: document.getElementById("log-file"),
   chartV: document.getElementById("chart-v"),
   chartI: document.getElementById("chart-i"),
-  ch3Toggle: document.getElementById("ch3-toggle"),
+  ch3Off: document.getElementById("ch3-off"),
+  ch3On: document.getElementById("ch3-on"),
 };
 
 function fmt(value, decimals) {
@@ -62,19 +63,6 @@ function updateChannel(ch, data, setpointSeq) {
   if (document.activeElement !== iInput && pending.i === null) iInput.value = data.i_set.toFixed(3);
 }
 
-function updateCh3(ch3On) {
-  const led = document.getElementById("led-3");
-  const isOn = ch3On === true;
-  els.ch3Toggle.textContent = isOn ? "SPEGNI" : "ACCENDI";
-  els.ch3Toggle.classList.toggle("on", isOn);
-  els.ch3Toggle.classList.toggle("off", !isOn);
-  led.classList.toggle("on", isOn);
-  led.classList.toggle("off", !isOn);
-  led.title = ch3On === null || ch3On === undefined
-    ? "Stato assunto (mai comandato da qui)"
-    : (isOn ? "ON" : "OFF");
-}
-
 async function refreshStatus() {
   try {
     const res = await fetch("/api/status");
@@ -90,7 +78,6 @@ async function refreshStatus() {
     lastSetpointSeq = data.setpoint_seq;
     updateChannel(1, data.channels["1"], data.setpoint_seq);
     updateChannel(2, data.channels["2"], data.setpoint_seq);
-    updateCh3(data.ch3_on);
 
     els.logToggle.textContent = data.logging ? "Ferma log" : "Avvia log";
     els.logToggle.classList.toggle("active", data.logging);
@@ -209,8 +196,7 @@ function wireControls() {
     });
   });
 
-  els.ch3Toggle.addEventListener("click", async () => {
-    const turningOn = els.ch3Toggle.classList.contains("off");
+  const sendCh3 = async (turningOn) => {
     const action = turningOn ? "accendere" : "spegnere";
     if (!confirm(`Confermi di voler ${action} l'uscita CH3?`)) return;
     await fetch(`/api/channel/3/output`, {
@@ -218,8 +204,9 @@ function wireControls() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ on: turningOn }),
     });
-    refreshStatus();
-  });
+  };
+  els.ch3Off.addEventListener("click", () => sendCh3(false));
+  els.ch3On.addEventListener("click", () => sendCh3(true));
 
   els.logToggle.addEventListener("click", async () => {
     const starting = !els.logToggle.classList.contains("active");
