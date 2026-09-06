@@ -161,6 +161,28 @@ class SPD3303C:
     def set_output(self, ch, state):
         self.write(f"OUTPut CH{ch},{'ON' if state else 'OFF'}")
 
+    def set_all_outputs(self, state):
+        """Accende/spegne CH1+CH2+CH3 con una sola chiamata.
+
+        Non è vera simultaneità hardware come il tasto fisico (verificato:
+        *TRG non è implementato — "Command keywords were not recognized" —
+        e non esiste alcun comando SCPI per più canali insieme). Lo scarto
+        minimo affidabile tra un OUTPut e il successivo su questo firmware è
+        empiricamente ~45ms (sotto i 45ms un canale su tre viene perso
+        silenziosamente, senza errore); con 3 comandi restano quindi
+        ~90-135ms di scarto reale, non azzerabile via USB/SCPI.
+        """
+        on_off = "ON" if state else "OFF"
+        with self._lock:
+            self._guard()
+            try:
+                for ch in (1, 2, 3):
+                    self._inst.write(f"OUTPut CH{ch},{on_off}")
+                    time.sleep(self._io_delay)
+            except Exception as e:
+                self.invalidate()
+                raise SPD3303CError(f"Errore comunicazione: {e}") from e
+
     def set_lock(self, locked):
         self.write("*LOCK" if locked else "*UNLOCK")
 

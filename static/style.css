@@ -245,6 +245,13 @@ button:disabled {
   border-color: #2f8a2f;
   color: #08320c;
 }
+.master-note {
+  font-size: 10px;
+  color: #999;
+  line-height: 1.4;
+  margin: 4px 4px 0;
+  text-align: center;
+}
 
 .log-bar {
   display: flex;

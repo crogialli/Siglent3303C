@@ -226,6 +226,15 @@ def set_output(ch: int, body: SetOutput):
     return {"ok": True}
 
 
+@app.post("/api/all-outputs")
+def set_all_outputs(body: SetOutput):
+    try:
+        instrument.set_all_outputs(body.on)
+    except SPD3303CError as e:
+        raise HTTPException(503, str(e))
+    return {"ok": True}
+
+
 def _refresh_mode_flags():
     """Rilegge subito lock/track mode dopo un comando, come per i setpoint."""
     try:

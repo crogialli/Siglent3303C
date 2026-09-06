@@ -275,10 +275,11 @@ function wireControls() {
     const turningOn = !els.masterOn.classList.contains("all-on");
     const action = turningOn ? "accendere" : "spegnere";
     if (!confirm(`Confermi di voler ${action} tutte e tre le uscite (CH1, CH2, CH3)?`)) return;
-    const body = JSON.stringify({ on: turningOn });
-    await Promise.all([1, 2, 3].map((ch) => fetch(`/api/channel/${ch}/output`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body,
-    })));
+    await fetch("/api/all-outputs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ on: turningOn }),
+    });
     refreshStatus();
   });
 
