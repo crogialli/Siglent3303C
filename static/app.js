@@ -36,7 +36,7 @@ function updateChannel(ch, data) {
 
   const ctrl = document.querySelector(`.channel-control[data-ch="${ch}"]`);
   const outBtn = ctrl.querySelector(".toggle-output");
-  outBtn.textContent = data.on ? "ON" : "OFF";
+  outBtn.textContent = data.on ? "SPEGNI" : "ACCENDI";
   outBtn.classList.toggle("on", data.on);
   outBtn.classList.toggle("off", !data.on);
 
@@ -49,7 +49,7 @@ function updateChannel(ch, data) {
 function updateCh3(ch3On) {
   const led = document.getElementById("led-3");
   const isOn = ch3On === true;
-  els.ch3Toggle.textContent = isOn ? "ON" : "OFF";
+  els.ch3Toggle.textContent = isOn ? "SPEGNI" : "ACCENDI";
   els.ch3Toggle.classList.toggle("on", isOn);
   els.ch3Toggle.classList.toggle("off", !isOn);
   led.classList.toggle("on", isOn);
