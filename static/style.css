@@ -207,7 +207,7 @@ body {
   outline-offset: 1px;
 }
 .channel-control input:disabled,
-.channel-control button:disabled {
+button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
@@ -230,6 +230,38 @@ body {
 
 .btn-row { display: flex; gap: 8px; margin-top: 10px; }
 .btn-row button { flex: 1; }
+
+.master-bar { margin-top: 16px; }
+.master-on-btn {
+  width: 100%;
+  padding: 10px 0;
+  font-size: 13px;
+  letter-spacing: 1px;
+  background: linear-gradient(180deg, #e8e7e3, #c7c6c1);
+  color: #666;
+}
+.master-on-btn.all-on {
+  background: linear-gradient(180deg, #8fe08f, #45b545);
+  border-color: #2f8a2f;
+  color: #08320c;
+}
+
+.log-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px 0;
+  font-size: 12px;
+  color: #555;
+}
+#log-dir-path {
+  font-family: "Menlo", "Consolas", monospace;
+  font-size: 11px;
+  color: #777;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 button {
   font-family: inherit;

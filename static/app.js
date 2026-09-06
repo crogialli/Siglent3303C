@@ -20,7 +20,12 @@ const els = {
   chartI: document.getElementById("chart-i"),
   ch3Off: document.getElementById("ch3-off"),
   ch3On: document.getElementById("ch3-on"),
+  masterOn: document.getElementById("master-on"),
+  logDirBtn: document.getElementById("log-dir-btn"),
+  logDirPath: document.getElementById("log-dir-path"),
 };
+
+const LOCK_NOTE_TEXT = "Tastiera dell'alimentatore bloccata [LOCK]";
 
 function fmt(value, decimals) {
   return Number(value).toFixed(decimals).padStart(decimals + 3, "0");
@@ -98,7 +103,7 @@ function updateChannel(ch, data, otherData, setpointSeq, trackMode, locked) {
   const note = document.getElementById(`lock-note-${ch}`);
   note.hidden = !disabled;
   if (locked) {
-    note.textContent = "Tastiera dell'alimentatore bloccata (LOCK): comandi non applicabili da qui.";
+    note.textContent = LOCK_NOTE_TEXT;
   } else if (followsCh1) {
     note.textContent = `Controllato da CH1 (modalità ${trackMode}): impostazioni non modificabili da qui.`;
   }
@@ -124,8 +129,20 @@ async function refreshStatus() {
     document.getElementById("key-series").classList.toggle("active", data.track_mode === "series");
     document.getElementById("key-parallel").classList.toggle("active", data.track_mode === "parallel");
 
+    els.ch3Off.disabled = data.locked;
+    els.ch3On.disabled = data.locked;
+    const ch3Note = document.getElementById("lock-note-3");
+    ch3Note.hidden = !data.locked;
+    if (data.locked) ch3Note.textContent = LOCK_NOTE_TEXT;
+
+    // CH3 non è verificabile via USB: il pulsante riflette solo CH1+CH2.
+    const allOn = data.channels["1"].on && data.channels["2"].on;
+    els.masterOn.classList.toggle("all-on", allOn);
+    els.masterOn.disabled = data.locked;
+
     els.logToggle.textContent = data.logging ? "Ferma log" : "Avvia log";
     els.logToggle.classList.toggle("active", data.logging);
+    els.logDirPath.textContent = data.log_dir || "";
   } catch (e) {
     els.connStatus.textContent = "Server non raggiungibile";
     els.connStatus.className = "err";
@@ -252,6 +269,33 @@ function wireControls() {
   };
   els.ch3Off.addEventListener("click", () => sendCh3(false));
   els.ch3On.addEventListener("click", () => sendCh3(true));
+
+  els.masterOn.addEventListener("click", async () => {
+    if (!confirm("Confermi di voler accendere tutte e tre le uscite (CH1, CH2, CH3)?")) return;
+    await Promise.all([
+      fetch(`/api/channel/1/output`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on: true }),
+      }),
+      fetch(`/api/channel/2/output`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on: true }),
+      }),
+      fetch(`/api/channel/3/output`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on: true }),
+      }),
+    ]);
+    refreshStatus();
+  });
+
+  els.logDirBtn.addEventListener("click", async () => {
+    els.logDirBtn.disabled = true;
+    try {
+      const res = await fetch("/api/log/choose-directory", { method: "POST" });
+      const data = await res.json();
+      if (data.ok) els.logDirPath.textContent = data.directory;
+    } finally {
+      els.logDirBtn.disabled = false;
+    }
+  });
 
   els.logToggle.addEventListener("click", async () => {
     const starting = !els.logToggle.classList.contains("active");

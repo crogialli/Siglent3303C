@@ -33,6 +33,10 @@
       <div class="tagline">Programmable DC Power Supply &mdash; Web Control</div>
     </div>
 
+    <div class="master-bar">
+      <button class="master-on-btn" id="master-on">ACCENDI TUTTE LE USCITE</button>
+    </div>
+
     <div class="controls">
       <div class="channel-control" data-ch="1">
         <h3>CH1</h3>
@@ -57,6 +61,7 @@
       <div class="channel-control ch3" data-ch="3">
         <h3>CH3</h3>
         <p class="ch3-note">Uscita fissa (2.5/3.3/5V selezionati via DIP switch hardware).<br />Stato non leggibile via USB: nessuno stato mostrato, solo comando diretto.</p>
+        <p class="lock-note" id="lock-note-3" hidden></p>
         <div class="btn-row">
           <button class="ch3-off" id="ch3-off">SPEGNI</button>
           <button class="ch3-on" id="ch3-on">ACCENDI</button>
@@ -67,7 +72,12 @@
     <div class="status-bar">
       <span id="conn-status">Connessione...</span>
       <span id="track-mode"></span>
+    </div>
+
+    <div class="log-bar">
       <button id="log-toggle">Avvia log</button>
+      <button id="log-dir-btn" title="Scegli la cartella di destinazione dei file di log">Cartella log&hellip;</button>
+      <span id="log-dir-path"></span>
       <span id="log-file"></span>
     </div>
 
