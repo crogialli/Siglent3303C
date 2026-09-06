@@ -26,10 +26,13 @@ function parseLocaleFloat(str) {
 function updateChannel(ch, data) {
   document.getElementById(`v-${ch}`).textContent = fmt(data.v_meas, 2);
   document.getElementById(`i-${ch}`).textContent = fmt(data.i_meas, 3);
+  const limiting = data.on && data.mode === "CC";
   const led = document.getElementById(`led-${ch}`);
-  led.classList.remove("on", "off");
-  led.classList.add(data.on ? "on" : "off");
+  led.classList.remove("on", "off", "limit");
+  led.classList.add(!data.on ? "off" : (limiting ? "limit" : "on"));
   led.title = `${data.on ? "ON" : "OFF"} (${data.mode})`;
+
+  document.getElementById(`limit-${ch}`).classList.toggle("show", limiting);
 
   const ctrl = document.querySelector(`.channel-control[data-ch="${ch}"]`);
   const outBtn = ctrl.querySelector(".toggle-output");
