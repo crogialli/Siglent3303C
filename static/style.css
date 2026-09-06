@@ -26,7 +26,7 @@ body {
 }
 
 .psu {
-  width: 860px;
+  width: 940px;
   max-width: 100%;
   background: var(--case-bg);
   border: 1px solid var(--case-border);
@@ -113,38 +113,57 @@ body {
 }
 
 .controls {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.8fr;
   gap: 16px;
   margin-top: 18px;
 }
 
 .channel-control {
-  flex: 1;
   background: var(--btn-bg);
   border: 1px solid var(--btn-border);
   border-radius: 8px;
   padding: 12px 14px;
 }
-.channel-control h3 { margin: 0 0 8px; font-size: 13px; letter-spacing: 1px; color: #555; }
+.channel-control h3 { margin: 0 0 10px; font-size: 13px; letter-spacing: 1px; color: #555; }
 .channel-control label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: block;
   font-size: 12px;
   color: #444;
-  margin-bottom: 8px;
-  gap: 8px;
+  margin-bottom: 10px;
+}
+.channel-control label span,
+.channel-control label {
+  font-weight: 500;
 }
 .channel-control input {
-  width: 90px;
-  padding: 4px 6px;
-  border-radius: 4px;
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: 5px;
   border: 1px solid #b0afaa;
-  font-size: 13px;
+  font-size: 16px;
+  font-family: "Menlo", "Consolas", monospace;
   text-align: right;
+  background: #fff;
+}
+.channel-control input:focus {
+  outline: 2px solid #1e6fd9;
+  outline-offset: 1px;
+}
+
+.channel-control.ch3 { display: flex; flex-direction: column; }
+.ch3-note {
+  font-size: 11px;
+  color: #6b6b6b;
+  line-height: 1.4;
+  margin: 0 0 10px;
+  flex: 1;
 }
 
 .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+.btn-row button { flex: 1; }
 
 button {
   font-family: inherit;
@@ -187,11 +206,27 @@ button:active { transform: translateY(1px); }
   color: #3a0e08;
 }
 
-canvas#chart {
+.chart-block { margin-top: 14px; }
+.chart-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: #666;
+}
+.chart-title { margin-left: auto; letter-spacing: 0.5px; }
+.legend { display: flex; align-items: center; gap: 5px; }
+.legend .dot {
+  width: 9px; height: 9px; border-radius: 50%; display: inline-block;
+}
+.legend .dot.ch1 { background: var(--green-led); }
+.legend .dot.ch2 { background: var(--amber); }
+
+.chart-block canvas {
   display: block;
   width: 100%;
-  height: 160px;
-  margin-top: 14px;
+  height: 140px;
   background: #101012;
   border-radius: 6px;
   border: 1px solid #050505;

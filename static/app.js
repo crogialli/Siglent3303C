@@ -1,16 +1,26 @@
 const POLL_MS = 1000;
 const VOLT_SCALE_MAX = 32;
+const CURRENT_SCALE_MAX = 3.2;
 
 const els = {
   connStatus: document.getElementById("conn-status"),
   trackMode: document.getElementById("track-mode"),
   logToggle: document.getElementById("log-toggle"),
   logFile: document.getElementById("log-file"),
-  chart: document.getElementById("chart"),
+  chartV: document.getElementById("chart-v"),
+  chartI: document.getElementById("chart-i"),
+  ch3Toggle: document.getElementById("ch3-toggle"),
 };
 
 function fmt(value, decimals) {
   return Number(value).toFixed(decimals).padStart(decimals + 3, "0");
+}
+
+// Accetta sia "5.5" che "5,5" (tastiera italiana).
+function parseLocaleFloat(str) {
+  if (str === "" || str == null) return null;
+  const n = parseFloat(String(str).replace(",", "."));
+  return Number.isNaN(n) ? null : n;
 }
 
 function updateChannel(ch, data) {
@@ -29,8 +39,20 @@ function updateChannel(ch, data) {
 
   const vInput = ctrl.querySelector(".set-v");
   const iInput = ctrl.querySelector(".set-i");
-  if (document.activeElement !== vInput) vInput.placeholder = data.v_set.toFixed(2);
-  if (document.activeElement !== iInput) iInput.placeholder = data.i_set.toFixed(3);
+  if (document.activeElement !== vInput) vInput.value = data.v_set.toFixed(2);
+  if (document.activeElement !== iInput) iInput.value = data.i_set.toFixed(3);
+}
+
+function updateCh3(ch3On) {
+  if (ch3On === null || ch3On === undefined) {
+    els.ch3Toggle.textContent = "OFF";
+    els.ch3Toggle.classList.add("off");
+    els.ch3Toggle.classList.remove("on");
+    return;
+  }
+  els.ch3Toggle.textContent = ch3On ? "ON" : "OFF";
+  els.ch3Toggle.classList.toggle("on", ch3On);
+  els.ch3Toggle.classList.toggle("off", !ch3On);
 }
 
 async function refreshStatus() {
@@ -47,6 +69,7 @@ async function refreshStatus() {
     els.trackMode.textContent = `Modalità: ${data.track_mode}`;
     updateChannel(1, data.channels["1"]);
     updateChannel(2, data.channels["2"]);
+    updateCh3(data.ch3_on);
 
     els.logToggle.textContent = data.logging ? "Ferma log" : "Avvia log";
     els.logToggle.classList.toggle("active", data.logging);
@@ -60,69 +83,91 @@ async function refreshHistoryAndDraw() {
   try {
     const res = await fetch("/api/history");
     const hist = await res.json();
-    drawChart(hist);
+    drawChart(els.chartV, hist, VOLT_SCALE_MAX, ["ch1_v", "ch2_v"], (v) => v.toFixed(0));
+    drawChart(els.chartI, hist, CURRENT_SCALE_MAX, ["ch1_i", "ch2_i"], (v) => v.toFixed(1));
   } catch (e) {
-    /* ignora, ridisegnerà al prossimo giro */
+    /* ridisegnerà al prossimo giro */
   }
 }
 
-function drawChart(hist) {
-  const canvas = els.chart;
+const SERIES_COLORS = { 0: "#7CFC7C", 1: "#ffb347" };
+
+function drawChart(canvas, hist, scaleMax, keys, labelFmt) {
   const ctx = canvas.getContext("2d");
   const w = canvas.width, h = canvas.height;
+  const marginLeft = 42, marginRight = 8, marginTop = 6, marginBottom = 6;
+  const plotW = w - marginLeft - marginRight;
+  const plotH = h - marginTop - marginBottom;
+
   ctx.clearRect(0, 0, w, h);
 
-  // griglia
+  // griglia + etichette scala (5 livelli)
   ctx.strokeStyle = "#2a2a2e";
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = (h / 4) * i;
+  ctx.fillStyle = "#8a8a8a";
+  ctx.font = "10px Menlo, Consolas, monospace";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const frac = i / steps;
+    const y = marginTop + plotH * (1 - frac);
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(w, y);
+    ctx.moveTo(marginLeft, y);
+    ctx.lineTo(marginLeft + plotW, y);
     ctx.stroke();
+    ctx.fillText(labelFmt(scaleMax * frac), marginLeft - 6, y);
   }
 
   if (hist.length < 2) return;
 
-  const plot = (key, color) => {
-    ctx.strokeStyle = color;
+  keys.forEach((key, idx) => {
+    ctx.strokeStyle = SERIES_COLORS[idx];
     ctx.lineWidth = 2;
     ctx.beginPath();
-    hist.forEach((pt, idx) => {
-      const x = (idx / (hist.length - 1)) * w;
-      const y = h - (Math.min(pt[key], VOLT_SCALE_MAX) / VOLT_SCALE_MAX) * h;
-      if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    hist.forEach((pt, i) => {
+      const x = marginLeft + (i / (hist.length - 1)) * plotW;
+      const clamped = Math.max(0, Math.min(pt[key], scaleMax));
+      const y = marginTop + plotH * (1 - clamped / scaleMax);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
     ctx.stroke();
-  };
-
-  plot("ch1_v", "#7CFC7C");
-  plot("ch2_v", "#ffb347");
+  });
 }
 
 function wireControls() {
-  document.querySelectorAll(".channel-control").forEach((ctrl) => {
+  document.querySelectorAll(".channel-control[data-ch]").forEach((ctrl) => {
     const ch = ctrl.dataset.ch;
+    if (ch === "3") return; // CH3 gestito a parte, non ha set-v/set-i
 
-    ctrl.querySelector(".apply").addEventListener("click", async () => {
-      const v = ctrl.querySelector(".set-v").value;
-      const i = ctrl.querySelector(".set-i").value;
-      if (v !== "") {
+    const vInput = ctrl.querySelector(".set-v");
+    const iInput = ctrl.querySelector(".set-i");
+    const applyBtn = ctrl.querySelector(".apply");
+
+    const doApply = async () => {
+      const v = parseLocaleFloat(vInput.value);
+      const i = parseLocaleFloat(iInput.value);
+      if (v !== null) {
         await fetch(`/api/channel/${ch}/voltage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ value: parseFloat(v) }),
+          body: JSON.stringify({ value: v }),
         });
       }
-      if (i !== "") {
+      if (i !== null) {
         await fetch(`/api/channel/${ch}/current`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ value: parseFloat(i) }),
+          body: JSON.stringify({ value: i }),
         });
       }
       refreshStatus();
+    };
+
+    applyBtn.addEventListener("click", doApply);
+    [vInput, iInput].forEach((input) => {
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); doApply(); input.blur(); }
+      });
     });
 
     ctrl.querySelector(".toggle-output").addEventListener("click", async (e) => {
@@ -136,6 +181,18 @@ function wireControls() {
       });
       refreshStatus();
     });
+  });
+
+  els.ch3Toggle.addEventListener("click", async () => {
+    const turningOn = els.ch3Toggle.classList.contains("off");
+    const action = turningOn ? "accendere" : "spegnere";
+    if (!confirm(`Confermi di voler ${action} l'uscita CH3?`)) return;
+    await fetch(`/api/channel/3/output`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ on: turningOn }),
+    });
+    refreshStatus();
   });
 
   els.logToggle.addEventListener("click", async () => {

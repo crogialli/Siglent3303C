@@ -30,8 +30,8 @@
     <div class="controls">
       <div class="channel-control" data-ch="1">
         <h3>CH1</h3>
-        <label>Tensione (V)<input type="number" class="set-v" step="0.01" min="0" max="32" /></label>
-        <label>Corrente (A)<input type="number" class="set-i" step="0.001" min="0" max="3.2" /></label>
+        <label>Tensione (V)<input type="text" inputmode="decimal" class="set-v" /></label>
+        <label>Limitatore di Corrente (A)<input type="text" inputmode="decimal" class="set-i" /></label>
         <div class="btn-row">
           <button class="apply">SET</button>
           <button class="toggle-output off">OFF</button>
@@ -39,11 +39,18 @@
       </div>
       <div class="channel-control" data-ch="2">
         <h3>CH2</h3>
-        <label>Tensione (V)<input type="number" class="set-v" step="0.01" min="0" max="32" /></label>
-        <label>Corrente (A)<input type="number" class="set-i" step="0.001" min="0" max="3.2" /></label>
+        <label>Tensione (V)<input type="text" inputmode="decimal" class="set-v" /></label>
+        <label>Limitatore di Corrente (A)<input type="text" inputmode="decimal" class="set-i" /></label>
         <div class="btn-row">
           <button class="apply">SET</button>
           <button class="toggle-output off">OFF</button>
+        </div>
+      </div>
+      <div class="channel-control ch3" data-ch="3">
+        <h3>CH3</h3>
+        <p class="ch3-note">Uscita fissa (2.5/3.3/5V selezionati via DIP switch hardware).<br />Stato non leggibile via USB: mostra l'ultimo comando inviato da qui.</p>
+        <div class="btn-row">
+          <button class="toggle-output off" id="ch3-toggle">OFF</button>
         </div>
       </div>
     </div>
@@ -55,7 +62,22 @@
       <span id="log-file"></span>
     </div>
 
-    <canvas id="chart" width="820" height="160"></canvas>
+    <div class="chart-block">
+      <div class="chart-header">
+        <span class="legend"><i class="dot ch1"></i>CH1</span>
+        <span class="legend"><i class="dot ch2"></i>CH2</span>
+        <span class="chart-title">Tensione (V)</span>
+      </div>
+      <canvas id="chart-v" width="820" height="140"></canvas>
+    </div>
+    <div class="chart-block">
+      <div class="chart-header">
+        <span class="legend"><i class="dot ch1"></i>CH1</span>
+        <span class="legend"><i class="dot ch2"></i>CH2</span>
+        <span class="chart-title">Corrente (A)</span>
+      </div>
+      <canvas id="chart-i" width="820" height="140"></canvas>
+    </div>
   </div>
 
   <script src="/app.js"></script>
