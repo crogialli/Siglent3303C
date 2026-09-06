@@ -27,11 +27,14 @@ STATIC_DIR = os.path.join(APP_DIR, "static")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 FAST_POLL_PAUSE_S = 0.02  # pausa tra un ciclo di misura e il successivo (oltre al tempo delle query stesse)
-SETPOINT_POLL_INTERVAL_S = 1.0  # i setpoint cambiano solo per azione utente/pannello, non serve leggerli spesso
+SETPOINT_EVERY_N_CYCLES = 3  # i setpoint cambiano solo per comando/pannello: bastano ~1 volta/sec
 HISTORY_LEN = 1500
 PORT = 8420
 
-instrument = SPD3303C(io_delay=0.035)
+# Un solo thread di polling: evita la contesa tra thread concorrenti sulla
+# stessa connessione USB, che rendeva più facile sforare il timeout e
+# innescare la desincronizzazione USBTMC (vedi SPD3303C.invalidate()).
+instrument = SPD3303C(io_delay=0.045)
 
 state_lock = threading.Lock()
 state = {
@@ -64,8 +67,10 @@ def _open_log_file():
 
 
 def poll_loop():
-    """Ciclo veloce: solo stato + tensione/corrente misurate (nessun comando)."""
+    """Unico ciclo di polling: stato + misure a ogni giro, setpoint ogni
+    SETPOINT_EVERY_N_CYCLES giri (cambiano solo per comando o pannello)."""
     global _log_file, _log_writer
+    cycle = 0
     while True:
         try:
             if not instrument.connected:
@@ -80,6 +85,19 @@ def poll_loop():
                     "mode": status[f"ch{ch}_mode"],
                     "on": status[f"ch{ch}_on"],
                 }
+
+            cycle += 1
+            read_setpoints = (cycle % SETPOINT_EVERY_N_CYCLES) == 0
+            setpoints = None
+            if read_setpoints:
+                setpoints = {
+                    ch: {
+                        "v_set": instrument.get_setpoint_voltage(ch),
+                        "i_set": instrument.get_setpoint_current(ch),
+                    }
+                    for ch in (1, 2)
+                }
+
             with state_lock:
                 state["connected"] = True
                 state["error"] = None
@@ -89,6 +107,10 @@ def poll_loop():
                 state["meas_seq"] += 1
                 for ch in (1, 2):
                     state["channels"][ch].update(meas[ch])
+                if setpoints is not None:
+                    state["setpoint_seq"] += 1
+                    for ch in (1, 2):
+                        state["channels"][ch].update(setpoints[ch])
                 state["logging"] = _logging_flag.is_set()
                 history.append({
                     "t": ts,
@@ -108,6 +130,7 @@ def poll_loop():
                 state["error"] = str(e)
             time.sleep(0.5)  # evita di martellare l'hardware/USB se scollegato
         except Exception as e:
+            instrument.invalidate()  # per sicurezza, anche se l'eccezione non viene da SPD3303C
             with state_lock:
                 state["connected"] = False
                 state["error"] = f"Errore inatteso: {e}"
@@ -115,32 +138,9 @@ def poll_loop():
         time.sleep(FAST_POLL_PAUSE_S)
 
 
-def poll_setpoints_loop():
-    """Ciclo lento: legge i setpoint V/I (cambiano solo per comando o pannello fisico)."""
-    while True:
-        time.sleep(SETPOINT_POLL_INTERVAL_S)
-        if not instrument.connected:
-            continue
-        try:
-            setpoints = {
-                ch: {
-                    "v_set": instrument.get_setpoint_voltage(ch),
-                    "i_set": instrument.get_setpoint_current(ch),
-                }
-                for ch in (1, 2)
-            }
-        except SPD3303CError:
-            continue  # il ciclo veloce si accorgerà della disconnessione
-        with state_lock:
-            state["setpoint_seq"] += 1
-            for ch in (1, 2):
-                state["channels"][ch].update(setpoints[ch])
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     threading.Thread(target=poll_loop, daemon=True).start()
-    threading.Thread(target=poll_setpoints_loop, daemon=True).start()
     yield
 
 

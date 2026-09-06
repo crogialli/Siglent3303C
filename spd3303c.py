@@ -44,8 +44,12 @@ class SPD3303C:
             inst.write_termination = "\n"
             self._rm = rm
             self._inst = inst
+            try:
+                self.idn = self._query_locked("*IDN?")
+            except Exception as e:
+                self.invalidate()
+                raise SPD3303CError(f"Errore comunicazione durante la connessione: {e}") from e
             self.connected = True
-            self.idn = self._query_locked("*IDN?")
 
     def _write_locked(self, cmd):
         self._inst.write(cmd)
@@ -60,13 +64,31 @@ class SPD3303C:
         if not self.connected or self._inst is None:
             raise SPD3303CError("Strumento non connesso")
 
+    def invalidate(self):
+        """Chiude la sessione USB corrente e forza una riconnessione pulita.
+
+        Va chiamato ogni volta che una query/scrittura fallisce (es. timeout):
+        il firmware non è pienamente conforme USBTMC, quindi una risposta
+        rimasta "in coda" dopo un timeout può altrimenti essere letta da una
+        query successiva non correlata (visto in pratica: SYSTem:STATus?
+        letto al posto di *IDN? dopo un errore).
+        """
+        with self._lock:
+            self.connected = False
+            if self._inst is not None:
+                try:
+                    self._inst.close()
+                except Exception:
+                    pass
+                self._inst = None
+
     def query(self, cmd):
         with self._lock:
             self._guard()
             try:
                 return self._query_locked(cmd)
             except Exception as e:
-                self.connected = False
+                self.invalidate()
                 raise SPD3303CError(f"Errore comunicazione: {e}") from e
 
     def write(self, cmd):
@@ -75,26 +97,41 @@ class SPD3303C:
             try:
                 self._write_locked(cmd)
             except Exception as e:
-                self.connected = False
+                self.invalidate()
                 raise SPD3303CError(f"Errore comunicazione: {e}") from e
+
+    def _query_and_parse(self, cmd, parse):
+        """Query + parsing della risposta, invalidando la sessione se la
+        risposta non è nel formato atteso (risposta di un'altra query letta
+        per errore dopo un timeout, non solo un timeout esplicito)."""
+        raw = self.query(cmd)
+        try:
+            return parse(raw)
+        except ValueError as e:
+            self.invalidate()
+            raise SPD3303CError(f"Risposta inattesa a '{cmd}': {raw!r}") from e
 
     # --- letture ---
 
     def measure_voltage(self, ch):
-        return float(self.query(f"MEASure:VOLTage? CH{ch}"))
+        return self._query_and_parse(f"MEASure:VOLTage? CH{ch}", float)
 
     def measure_current(self, ch):
-        return float(self.query(f"MEASure:CURRent? CH{ch}"))
+        return self._query_and_parse(f"MEASure:CURRent? CH{ch}", float)
 
     def get_setpoint_voltage(self, ch):
-        return float(self.query(f"CH{ch}:VOLTage?"))
+        return self._query_and_parse(f"CH{ch}:VOLTage?", float)
 
     def get_setpoint_current(self, ch):
-        return float(self.query(f"CH{ch}:CURRent?"))
+        return self._query_and_parse(f"CH{ch}:CURRent?", float)
 
     def get_status(self):
         raw = self.query("SYSTem:STATus?")
-        val = int(raw, 16)
+        try:
+            val = int(raw, 16)
+        except ValueError as e:
+            self.invalidate()
+            raise SPD3303CError(f"Risposta inattesa a 'SYSTem:STATus?': {raw!r}") from e
         return {
             "raw": raw,
             "ch1_mode": "CC" if val & 0x01 else "CV",
