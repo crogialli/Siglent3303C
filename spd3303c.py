@@ -39,6 +39,21 @@ warnings.filterwarnings("ignore", message="read string doesn't end with terminat
 warnings.filterwarnings("ignore", message="TCPIP:instr resource discovery.*")
 warnings.filterwarnings("ignore", message="TCPIP::hislip.*")
 
+# rm.list_resources() interroga SEMPRE tutti i tipi di risorsa supportati da
+# pyvisa-py (USB, seriale, TCPIP...) prima di filtrare per query — non c'è
+# modo di limitarsi a "solo USB" passando una query, perché il filtro si
+# applica dopo che ogni tipo ha già fatto la propria scoperta. La scoperta
+# TCPIP (VXI-11) manda un vero broadcast UDP a 255.255.255.255 ad ogni
+# chiamata: da qui l'avviso del firewall ad ogni avvio dell'app, per un
+# tipo di risorsa che qui non serve mai (parliamo sempre e solo con un
+# dispositivo USB). Disattivata disabilitando la sua scoperta a monte.
+try:
+    import pyvisa_py.tcpip as _pyvisa_tcpip
+
+    _pyvisa_tcpip.TCPIPInstrSession.list_resources = staticmethod(lambda: [])
+except Exception:
+    pass
+
 VOLTAGE_MAX = 32.0
 CURRENT_MAX = 3.2
 
