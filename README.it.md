@@ -2,6 +2,8 @@
 
 🇬🇧 [English](README.md) | 🇮🇹 Italiano (questa pagina)
 
+<p align="center"><img src="docs/spd3303c.png" alt="Pannello frontale Siglent SPD3303C" width="600"></p>
+
 Interfaccia web per il controllo remoto via USB/SCPI dell'alimentatore
 programmabile Siglent SPD3303C — monitoraggio in tempo reale, comando di
 tensione/corrente, LOCK/SERIE/PARALLELO, data logging. Bilingue (IT/EN).

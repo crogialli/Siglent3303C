@@ -2,6 +2,8 @@
 
 🇬🇧 English (this page) | 🇮🇹 [Italiano](README.it.md)
 
+<p align="center"><img src="docs/spd3303c.png" alt="Siglent SPD3303C front panel" width="600"></p>
+
 Web interface for remote USB/SCPI control of the Siglent SPD3303C
 programmable power supply — real-time monitoring, voltage/current
 control, LOCK/SERIES/PARALLEL, data logging. Bilingual UI (IT/EN).
