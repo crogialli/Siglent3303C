@@ -42,6 +42,26 @@ body {
   padding: 0 4px 10px;
 }
 
+.lang-switch {
+  display: flex;
+  gap: 4px;
+}
+.lang-btn {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: #888;
+  cursor: pointer;
+}
+.lang-btn.active {
+  background: #1e6fd9;
+  border-color: #1558ad;
+  color: #fff;
+}
+
 .key-panel {
   display: flex;
   gap: 8px;

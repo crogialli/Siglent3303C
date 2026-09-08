@@ -2,6 +2,173 @@ const POLL_MS = 400; // il backend campiona misure a ~2.5 volte/sec
 const VOLT_SCALE_MAX = 32;
 const CURRENT_SCALE_MAX = 3.2;
 
+const I18N = {
+  it: {
+    lock: "LOCK",
+    series: "SERIE",
+    parallel: "PARALLELO",
+    lockTitle: "Blocca/sblocca la tastiera dell'alimentatore",
+    seriesTitle: "Attiva/disattiva la modalità serie",
+    parallelTitle: "Attiva/disattiva la modalità parallelo",
+    masterNote: "Non simultaneo come il tasto fisico: l'interfaccia USB richiede ~45ms tra un canale e l'altro (~100ms totali). Verificato: nessun comando disponibile per farlo davvero in un solo istante.",
+    voltageLabel: "Tensione (V)",
+    currentLabel: "Limitatore di Corrente (A)",
+    ch3Note: "Uscita fissa (2.5/3.3/5V selezionati via DIP switch hardware).<br />Stato non leggibile via USB: nessuno stato mostrato, solo comando diretto.",
+    ch3OffBtn: "SPEGNI",
+    ch3OnBtn: "ACCENDI",
+    connecting: "Connessione...",
+    logStart: "Avvia log",
+    logStop: "Ferma log",
+    logDirLabel: "Cartella log",
+    logDirPlaceholder: "/percorso/della/cartella",
+    logDirApply: "Applica",
+    chartVoltage: "Tensione (V)",
+    chartCurrent: "Corrente (A)",
+    on: "ACCESO",
+    off: "SPENTO",
+    parallelState: "PARALLELO",
+    turnOnAll: "ACCENDI TUTTE LE USCITE",
+    turnOffAll: "SPEGNI TUTTE LE USCITE",
+    outOn: "ACCENDI",
+    outOff: "SPEGNI",
+    modeNames: { independent: "indipendente", series: "serie", parallel: "parallelo", unknown: "sconosciuta" },
+    connected: (idn) => `Connesso — ${idn || ""}`,
+    disconnectedWithError: (err) => `Non connesso: ${err}`,
+    disconnected: "Non connesso",
+    serverUnreachable: "Server non raggiungibile",
+    modeStatus: (m) => `Modalità: ${I18N.it.modeNames[m] || m}`,
+    lockedNote: "Tastiera dell'alimentatore bloccata [LOCK]",
+    followsCh1Note: (mode) => `Controllato da CH1 (modalità ${I18N.it.modeNames[mode] || mode}): impostazioni non modificabili da qui.`,
+    invalidValueAlert: "Valore non valido nel campo Tensione o Corrente: correggilo prima di premere SET.",
+    invalidDirFallback: "Cartella non valida",
+    confirmOutputOn: (ch) => `Confermi di voler accendere l'uscita CH${ch}?`,
+    confirmOutputOff: (ch) => `Confermi di voler spegnere l'uscita CH${ch}?`,
+    confirmAllOutputsOn: "Confermi di voler accendere tutte e tre le uscite (CH1, CH2, CH3)?",
+    confirmAllOutputsOff: "Confermi di voler spegnere tutte e tre le uscite (CH1, CH2, CH3)?",
+    confirmLockOn: "Confermi di voler bloccare la tastiera dell'alimentatore?",
+    confirmLockOff: "Confermi di voler sbloccare la tastiera dell'alimentatore?",
+    confirmTrackOff: (label) => `Confermi di voler disattivare la modalità ${label} e tornare a Independent?`,
+    confirmTrackOn: (label, warning) => `Attenzione: la modalità ${label} collega elettricamente CH1 e CH2 (${warning}). Assicurati che il collegamento esterno sia adatto prima di procedere. Confermi?`,
+    seriesWarning: "le tensioni si sommano",
+    parallelWarning: "le correnti si sommano",
+    errors: {
+      invalid_channel: "Canale non valido",
+      voltage_out_of_range: (max) => `Tensione fuori range (0-${max}V)`,
+      current_out_of_range: (max) => `Corrente fuori range (0-${max}A)`,
+      invalid_track_mode: "Modalità non valida",
+      invalid_logging_action: "Azione di log non valida",
+      logging_active: "Ferma il logging prima di cambiare cartella",
+      empty_path: "Percorso vuoto",
+      dir_not_found: (path) => `Cartella non trovata: ${path}`,
+      dir_not_writable: (path) => `Cartella non scrivibile: ${path}`,
+    },
+  },
+  en: {
+    lock: "LOCK",
+    series: "SERIES",
+    parallel: "PARALLEL",
+    lockTitle: "Lock/unlock the power supply's front-panel keys",
+    seriesTitle: "Enable/disable series mode",
+    parallelTitle: "Enable/disable parallel mode",
+    masterNote: "Not simultaneous like the physical key: the USB interface needs ~45ms between one channel and the next (~100ms total). Verified: no command exists to do it truly instantly.",
+    voltageLabel: "Voltage (V)",
+    currentLabel: "Current Limit (A)",
+    ch3Note: "Fixed output (2.5/3.3/5V selected via hardware DIP switch).<br />State not readable via USB: no status shown, direct command only.",
+    ch3OffBtn: "OFF",
+    ch3OnBtn: "ON",
+    connecting: "Connecting...",
+    logStart: "Start log",
+    logStop: "Stop log",
+    logDirLabel: "Log folder",
+    logDirPlaceholder: "/path/to/folder",
+    logDirApply: "Apply",
+    chartVoltage: "Voltage (V)",
+    chartCurrent: "Current (A)",
+    on: "ON",
+    off: "OFF",
+    parallelState: "PARALLEL",
+    turnOnAll: "TURN ON ALL OUTPUTS",
+    turnOffAll: "TURN OFF ALL OUTPUTS",
+    outOn: "TURN ON",
+    outOff: "TURN OFF",
+    modeNames: { independent: "independent", series: "series", parallel: "parallel", unknown: "unknown" },
+    connected: (idn) => `Connected — ${idn || ""}`,
+    disconnectedWithError: (err) => `Not connected: ${err}`,
+    disconnected: "Not connected",
+    serverUnreachable: "Server unreachable",
+    modeStatus: (m) => `Mode: ${I18N.en.modeNames[m] || m}`,
+    lockedNote: "Power supply keys are locked [LOCK]",
+    followsCh1Note: (mode) => `Controlled by CH1 (${I18N.en.modeNames[mode] || mode} mode): settings can't be changed from here.`,
+    invalidValueAlert: "Invalid value in the Voltage or Current field: fix it before pressing SET.",
+    invalidDirFallback: "Invalid folder",
+    confirmOutputOn: (ch) => `Turn on CH${ch} output?`,
+    confirmOutputOff: (ch) => `Turn off CH${ch} output?`,
+    confirmAllOutputsOn: "Turn on all three outputs (CH1, CH2, CH3)?",
+    confirmAllOutputsOff: "Turn off all three outputs (CH1, CH2, CH3)?",
+    confirmLockOn: "Lock the power supply's front-panel keys?",
+    confirmLockOff: "Unlock the power supply's front-panel keys?",
+    confirmTrackOff: (label) => `Disable ${label} mode and go back to Independent?`,
+    confirmTrackOn: (label, warning) => `Warning: ${label} mode electrically connects CH1 and CH2 (${warning}). Make sure the external wiring is suitable before proceeding. Continue?`,
+    seriesWarning: "voltages add up",
+    parallelWarning: "currents add up",
+    errors: {
+      invalid_channel: "Invalid channel",
+      voltage_out_of_range: (max) => `Voltage out of range (0-${max}V)`,
+      current_out_of_range: (max) => `Current out of range (0-${max}A)`,
+      invalid_track_mode: "Invalid mode",
+      invalid_logging_action: "Invalid logging action",
+      logging_active: "Stop logging before changing the folder",
+      empty_path: "Empty path",
+      dir_not_found: (path) => `Folder not found: ${path}`,
+      dir_not_writable: (path) => `Folder not writable: ${path}`,
+    },
+  },
+};
+
+let currentLang = localStorage.getItem("spd3303c_lang") || "it";
+
+function t(key, ...args) {
+  const entry = I18N[currentLang][key];
+  return typeof entry === "function" ? entry(...args) : entry;
+}
+
+function translateError(data, fallback) {
+  const code = data && data.detail && data.detail.code;
+  if (code && I18N[currentLang].errors[code]) {
+    const entry = I18N[currentLang].errors[code];
+    const params = (data.detail && data.detail.params) || [];
+    return typeof entry === "function" ? entry(...params) : entry;
+  }
+  if (typeof data.detail === "string") return data.detail;
+  return fallback;
+}
+
+function applyStaticTranslations() {
+  document.documentElement.lang = currentLang;
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-html]").forEach((el) => {
+    el.innerHTML = t(el.dataset.i18nHtml);
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll(".lang-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.lang === currentLang);
+  });
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem("spd3303c_lang", lang);
+  applyStaticTranslations();
+  refreshStatus();
+}
+
 // Per canale: seq del setpoint al momento dell'ultimo SET inviato da qui.
 // Finché state.setpoint_seq non supera questo valore, il campo resta vuoto
 // invece di mostrare il vecchio valore.
@@ -24,8 +191,6 @@ const els = {
   logDirInput: document.getElementById("log-dir-input"),
   logDirApply: document.getElementById("log-dir-apply"),
 };
-
-const LOCK_NOTE_TEXT = "Tastiera dell'alimentatore bloccata [LOCK]";
 
 function fmt(value, decimals) {
   return Number(value).toFixed(decimals).padStart(decimals + 3, "0");
@@ -61,16 +226,16 @@ function updateChannel(ch, data, otherData, setpointSeq, trackMode, locked) {
   led.classList.remove("on", "off", "limit");
   led.classList.add(!data.on ? "off" : (limiting ? "limit" : "on"));
   led.title = (ch === 2 && isParallel)
-    ? (data.on ? "ON (parallelo)" : "OFF")
+    ? (data.on ? `ON (${t("parallel").toLowerCase()})` : "OFF")
     : `${data.on ? "ON" : "OFF"} (${data.mode})`;
 
   const stateText = document.getElementById(`state-${ch}`);
   if (ch === 2 && isParallel && data.on) {
-    stateText.textContent = "PARALLELO";
+    stateText.textContent = t("parallelState");
     stateText.classList.add("on");
     stateText.classList.remove("off");
   } else {
-    stateText.textContent = data.on ? "ACCESO" : "SPENTO";
+    stateText.textContent = data.on ? t("on") : t("off");
     stateText.classList.toggle("on", data.on);
     stateText.classList.toggle("off", !data.on);
   }
@@ -79,7 +244,7 @@ function updateChannel(ch, data, otherData, setpointSeq, trackMode, locked) {
 
   const ctrl = document.querySelector(`.channel-control[data-ch="${ch}"]`);
   const outBtn = ctrl.querySelector(".toggle-output");
-  outBtn.textContent = data.on ? "SPEGNI" : "ACCENDI";
+  outBtn.textContent = data.on ? t("outOff") : t("outOn");
   outBtn.classList.toggle("on", data.on);
   outBtn.classList.toggle("off", !data.on);
 
@@ -109,9 +274,9 @@ function updateChannel(ch, data, otherData, setpointSeq, trackMode, locked) {
   const note = document.getElementById(`lock-note-${ch}`);
   note.hidden = !disabled;
   if (locked) {
-    note.textContent = LOCK_NOTE_TEXT;
+    note.textContent = t("lockedNote");
   } else if (followsCh1) {
-    note.textContent = `Controllato da CH1 (modalità ${trackMode}): impostazioni non modificabili da qui.`;
+    note.textContent = t("followsCh1Note", trackMode);
   }
 }
 
@@ -120,13 +285,13 @@ async function refreshStatus() {
     const res = await fetch("/api/status");
     const data = await res.json();
     if (data.connected) {
-      els.connStatus.textContent = `Connesso — ${data.idn || ""}`;
+      els.connStatus.textContent = t("connected", data.idn);
       els.connStatus.className = "ok";
     } else {
-      els.connStatus.textContent = data.error ? `Non connesso: ${data.error}` : "Non connesso";
+      els.connStatus.textContent = data.error ? t("disconnectedWithError", data.error) : t("disconnected");
       els.connStatus.className = "err";
     }
-    els.trackMode.textContent = `Modalità: ${data.track_mode}`;
+    els.trackMode.textContent = t("modeStatus", data.track_mode);
     lastSetpointSeq = data.setpoint_seq;
     updateChannel(1, data.channels["1"], data.channels["2"], data.setpoint_seq, data.track_mode, data.locked);
     updateChannel(2, data.channels["2"], data.channels["1"], data.setpoint_seq, data.track_mode, data.locked);
@@ -139,19 +304,19 @@ async function refreshStatus() {
     els.ch3On.disabled = data.locked;
     const ch3Note = document.getElementById("lock-note-3");
     ch3Note.hidden = !data.locked;
-    if (data.locked) ch3Note.textContent = LOCK_NOTE_TEXT;
+    if (data.locked) ch3Note.textContent = t("lockedNote");
 
     // CH3 non è verificabile via USB: il pulsante riflette solo CH1+CH2.
     const allOn = data.channels["1"].on && data.channels["2"].on;
-    els.masterOn.textContent = allOn ? "SPEGNI TUTTE LE USCITE" : "ACCENDI TUTTE LE USCITE";
+    els.masterOn.textContent = allOn ? t("turnOffAll") : t("turnOnAll");
     els.masterOn.classList.toggle("all-on", allOn);
     els.masterOn.disabled = data.locked;
 
-    els.logToggle.textContent = data.logging ? "Ferma log" : "Avvia log";
+    els.logToggle.textContent = data.logging ? t("logStop") : t("logStart");
     els.logToggle.classList.toggle("active", data.logging);
     if (document.activeElement !== els.logDirInput) els.logDirInput.value = data.log_dir || "";
   } catch (e) {
-    els.connStatus.textContent = "Server non raggiungibile";
+    els.connStatus.textContent = t("serverUnreachable");
     els.connStatus.className = "err";
   }
 }
@@ -233,7 +398,7 @@ function wireControls() {
       const v = parseLocaleFloat(vInput.value);
       const i = parseLocaleFloat(iInput.value);
       if (Number.isNaN(v) || Number.isNaN(i)) {
-        alert("Valore non valido nel campo Tensione o Corrente: correggilo prima di premere SET.");
+        alert(t("invalidValueAlert"));
         return;
       }
       const pending = pendingSetpoint[ch];
@@ -267,8 +432,7 @@ function wireControls() {
 
     ctrl.querySelector(".toggle-output").addEventListener("click", async (e) => {
       const turningOn = e.target.classList.contains("off");
-      const action = turningOn ? "accendere" : "spegnere";
-      if (!confirm(`Confermi di voler ${action} l'uscita CH${ch}?`)) return;
+      if (!confirm(turningOn ? t("confirmOutputOn", ch) : t("confirmOutputOff", ch))) return;
       await fetch(`/api/channel/${ch}/output`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -279,8 +443,7 @@ function wireControls() {
   });
 
   const sendCh3 = async (turningOn) => {
-    const action = turningOn ? "accendere" : "spegnere";
-    if (!confirm(`Confermi di voler ${action} l'uscita CH3?`)) return;
+    if (!confirm(turningOn ? t("confirmOutputOn", 3) : t("confirmOutputOff", 3))) return;
     await fetch(`/api/channel/3/output`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -292,8 +455,7 @@ function wireControls() {
 
   els.masterOn.addEventListener("click", async () => {
     const turningOn = !els.masterOn.classList.contains("all-on");
-    const action = turningOn ? "accendere" : "spegnere";
-    if (!confirm(`Confermi di voler ${action} tutte e tre le uscite (CH1, CH2, CH3)?`)) return;
+    if (!confirm(turningOn ? t("confirmAllOutputsOn") : t("confirmAllOutputsOff"))) return;
     await fetch("/api/all-outputs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -314,7 +476,7 @@ function wireControls() {
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.detail || "Cartella non valida");
+        alert(translateError(data, t("invalidDirFallback")));
         return;
       }
       els.logDirInput.value = data.directory;
@@ -337,8 +499,7 @@ function wireControls() {
   const keyLock = document.getElementById("key-lock");
   keyLock.addEventListener("click", async () => {
     const turningOn = !keyLock.classList.contains("active");
-    const action = turningOn ? "bloccare" : "sbloccare";
-    if (!confirm(`Confermi di voler ${action} la tastiera dell'alimentatore?`)) return;
+    if (!confirm(turningOn ? t("confirmLockOn") : t("confirmLockOff"))) return;
     await fetch("/api/lock", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -347,15 +508,14 @@ function wireControls() {
     refreshStatus();
   });
 
-  const wireTrackButton = (id, mode, label, warning) => {
+  const wireTrackButton = (id, mode, labelKey, warningKey) => {
     const btn = document.getElementById(id);
     btn.addEventListener("click", async () => {
       const isActive = btn.classList.contains("active");
       const targetMode = isActive ? 0 : mode;
       const msg = isActive
-        ? `Confermi di voler disattivare la modalità ${label} e tornare a Independent?`
-        : `Attenzione: la modalità ${label} collega elettricamente CH1 e CH2 (${warning}). ` +
-          "Assicurati che il collegamento esterno sia adatto prima di procedere. Confermi?";
+        ? t("confirmTrackOff", t(labelKey))
+        : t("confirmTrackOn", t(labelKey), t(warningKey));
       if (!confirm(msg)) return;
       await fetch("/api/track", {
         method: "POST",
@@ -365,10 +525,15 @@ function wireControls() {
       refreshStatus();
     });
   };
-  wireTrackButton("key-series", 1, "SERIE", "le tensioni si sommano");
-  wireTrackButton("key-parallel", 2, "PARALLELO", "le correnti si sommano");
+  wireTrackButton("key-series", 1, "series", "seriesWarning");
+  wireTrackButton("key-parallel", 2, "parallel", "parallelWarning");
+
+  document.querySelectorAll(".lang-btn").forEach((btn) => {
+    btn.addEventListener("click", () => setLang(btn.dataset.lang));
+  });
 }
 
+applyStaticTranslations();
 wireControls();
 refreshStatus();
 refreshHistoryAndDraw();

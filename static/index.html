@@ -10,13 +10,17 @@
   <div class="psu">
     <div class="top-bar">
       <div class="brand"><span class="brand-name">SIGLENT</span><span class="brand-reg">&reg;</span></div>
+      <div class="lang-switch">
+        <button class="lang-btn" id="lang-it" data-lang="it">IT</button>
+        <button class="lang-btn" id="lang-en" data-lang="en">EN</button>
+      </div>
       <div class="model">SPD3303C</div>
     </div>
 
     <div class="key-panel">
-      <button class="key-indicator" id="key-lock" title="Blocca/sblocca la tastiera dell'alimentatore">LOCK</button>
-      <button class="key-indicator" id="key-series" title="Attiva/disattiva la modalità serie">SERIE</button>
-      <button class="key-indicator" id="key-parallel" title="Attiva/disattiva la modalità parallelo">PARALLELO</button>
+      <button class="key-indicator" id="key-lock" data-i18n="lock" data-i18n-title="lockTitle">LOCK</button>
+      <button class="key-indicator" id="key-series" data-i18n="series" data-i18n-title="seriesTitle">SERIE</button>
+      <button class="key-indicator" id="key-parallel" data-i18n="parallel" data-i18n-title="parallelTitle">PARALLELO</button>
     </div>
 
     <div class="display-panel">
@@ -35,15 +39,15 @@
 
     <div class="master-bar">
       <button class="master-on-btn" id="master-on">ACCENDI TUTTE LE USCITE</button>
-      <p class="master-note">Non simultaneo come il tasto fisico: l'interfaccia USB richiede ~45ms tra un canale e l'altro (~100ms totali). Verificato: nessun comando disponibile per farlo davvero in un solo istante.</p>
+      <p class="master-note" data-i18n="masterNote">Non simultaneo come il tasto fisico: l'interfaccia USB richiede ~45ms tra un canale e l'altro (~100ms totali). Verificato: nessun comando disponibile per farlo davvero in un solo istante.</p>
     </div>
 
     <div class="controls">
       <div class="channel-control" data-ch="1">
         <h3>CH1</h3>
         <p class="lock-note" id="lock-note-1" hidden></p>
-        <label>Tensione (V)<input type="text" inputmode="decimal" class="set-v" /></label>
-        <label>Limitatore di Corrente (A)<input type="text" inputmode="decimal" class="set-i" /></label>
+        <label><span data-i18n="voltageLabel">Tensione (V)</span><input type="text" inputmode="decimal" class="set-v" /></label>
+        <label><span data-i18n="currentLabel">Limitatore di Corrente (A)</span><input type="text" inputmode="decimal" class="set-i" /></label>
         <div class="btn-row">
           <button class="apply">SET</button>
           <button class="toggle-output off">ACCENDI</button>
@@ -52,8 +56,8 @@
       <div class="channel-control" data-ch="2">
         <h3>CH2</h3>
         <p class="lock-note" id="lock-note-2" hidden></p>
-        <label>Tensione (V)<input type="text" inputmode="decimal" class="set-v" /></label>
-        <label>Limitatore di Corrente (A)<input type="text" inputmode="decimal" class="set-i" /></label>
+        <label><span data-i18n="voltageLabel">Tensione (V)</span><input type="text" inputmode="decimal" class="set-v" /></label>
+        <label><span data-i18n="currentLabel">Limitatore di Corrente (A)</span><input type="text" inputmode="decimal" class="set-i" /></label>
         <div class="btn-row">
           <button class="apply">SET</button>
           <button class="toggle-output off">ACCENDI</button>
@@ -61,27 +65,27 @@
       </div>
       <div class="channel-control ch3" data-ch="3">
         <h3>CH3</h3>
-        <p class="ch3-note">Uscita fissa (2.5/3.3/5V selezionati via DIP switch hardware).<br />Stato non leggibile via USB: nessuno stato mostrato, solo comando diretto.</p>
+        <p class="ch3-note" data-i18n-html="ch3Note">Uscita fissa (2.5/3.3/5V selezionati via DIP switch hardware).<br />Stato non leggibile via USB: nessuno stato mostrato, solo comando diretto.</p>
         <p class="lock-note" id="lock-note-3" hidden></p>
         <div class="btn-row">
-          <button class="ch3-off" id="ch3-off">SPEGNI</button>
-          <button class="ch3-on" id="ch3-on">ACCENDI</button>
+          <button class="ch3-off" id="ch3-off" data-i18n="ch3OffBtn">SPEGNI</button>
+          <button class="ch3-on" id="ch3-on" data-i18n="ch3OnBtn">ACCENDI</button>
         </div>
       </div>
     </div>
 
     <div class="status-bar">
-      <span id="conn-status">Connessione...</span>
+      <span id="conn-status" data-i18n="connecting">Connessione...</span>
       <span id="track-mode"></span>
     </div>
 
     <div class="log-bar">
-      <button id="log-toggle">Avvia log</button>
+      <button id="log-toggle" data-i18n="logStart">Avvia log</button>
       <label class="log-dir-field">
-        Cartella log
-        <input type="text" id="log-dir-input" spellcheck="false" placeholder="/percorso/della/cartella" />
+        <span data-i18n="logDirLabel">Cartella log</span>
+        <input type="text" id="log-dir-input" spellcheck="false" data-i18n-placeholder="logDirPlaceholder" placeholder="/percorso/della/cartella" />
       </label>
-      <button id="log-dir-apply">Applica</button>
+      <button id="log-dir-apply" data-i18n="logDirApply">Applica</button>
       <span id="log-file"></span>
     </div>
 
@@ -89,7 +93,7 @@
       <div class="chart-header">
         <span class="legend"><i class="dot ch1"></i>CH1</span>
         <span class="legend"><i class="dot ch2"></i>CH2</span>
-        <span class="chart-title">Tensione (V)</span>
+        <span class="chart-title" data-i18n="chartVoltage">Tensione (V)</span>
       </div>
       <canvas id="chart-v" width="820" height="140"></canvas>
     </div>
@@ -97,7 +101,7 @@
       <div class="chart-header">
         <span class="legend"><i class="dot ch1"></i>CH1</span>
         <span class="legend"><i class="dot ch2"></i>CH2</span>
-        <span class="chart-title">Corrente (A)</span>
+        <span class="chart-title" data-i18n="chartCurrent">Corrente (A)</span>
       </div>
       <canvas id="chart-i" width="820" height="140"></canvas>
     </div>

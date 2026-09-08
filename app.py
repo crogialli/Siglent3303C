@@ -172,9 +172,18 @@ class SetOutput(BaseModel):
     on: bool
 
 
+def _http_error(status, code, message, *params):
+    """HTTPException con un `code` stabile oltre al messaggio: il frontend
+    traduce per code quando lo riconosce, altrimenti mostra il messaggio."""
+    detail = {"code": code, "message": message}
+    if params:
+        detail["params"] = list(params)
+    raise HTTPException(status, detail)
+
+
 def _check_channel(ch: int):
     if ch not in (1, 2):
-        raise HTTPException(400, "Canale non valido (usa 1 o 2)")
+        _http_error(400, "invalid_channel", "Canale non valido (usa 1 o 2)")
 
 
 def _refresh_setpoint(ch: int):
@@ -193,7 +202,7 @@ def _refresh_setpoint(ch: int):
 def set_voltage(ch: int, body: SetValue):
     _check_channel(ch)
     if body.value > VOLTAGE_MAX:
-        raise HTTPException(400, f"Tensione fuori range (0-{VOLTAGE_MAX}V)")
+        _http_error(400, "voltage_out_of_range", f"Tensione fuori range (0-{VOLTAGE_MAX}V)", VOLTAGE_MAX)
     try:
         instrument.set_voltage(ch, body.value)
     except SPD3303CError as e:
@@ -206,7 +215,7 @@ def set_voltage(ch: int, body: SetValue):
 def set_current(ch: int, body: SetValue):
     _check_channel(ch)
     if body.value > CURRENT_MAX:
-        raise HTTPException(400, f"Corrente fuori range (0-{CURRENT_MAX}A)")
+        _http_error(400, "current_out_of_range", f"Corrente fuori range (0-{CURRENT_MAX}A)", CURRENT_MAX)
     try:
         instrument.set_current(ch, body.value)
     except SPD3303CError as e:
@@ -218,7 +227,7 @@ def set_current(ch: int, body: SetValue):
 @app.post("/api/channel/{ch}/output")
 def set_output(ch: int, body: SetOutput):
     if ch not in (1, 2, 3):
-        raise HTTPException(400, "Canale non valido (usa 1, 2 o 3)")
+        _http_error(400, "invalid_channel", "Canale non valido (usa 1, 2 o 3)")
     try:
         instrument.set_output(ch, body.on)
     except SPD3303CError as e:
@@ -267,7 +276,7 @@ def set_lock(body: SetLock):
 @app.post("/api/track")
 def set_track(body: SetTrack):
     if body.mode not in (0, 1, 2):
-        raise HTTPException(400, "Modalità non valida (0=independent, 1=series, 2=parallel)")
+        _http_error(400, "invalid_track_mode", "Modalità non valida (0=independent, 1=series, 2=parallel)")
     try:
         instrument.set_track_mode(body.mode)
     except SPD3303CError as e:
@@ -294,7 +303,7 @@ def logging_control(action: str):
                 _log_file = None
                 _log_writer = None
         return {"ok": True}
-    raise HTTPException(400, "Azione non valida (usa start o stop)")
+    _http_error(400, "invalid_logging_action", "Azione non valida (usa start o stop)")
 
 
 class SetLogDir(BaseModel):
@@ -312,14 +321,14 @@ def set_log_directory(body: SetLogDir):
     """
     global DATA_DIR
     if _logging_flag.is_set():
-        raise HTTPException(400, "Ferma il logging prima di cambiare cartella")
+        _http_error(400, "logging_active", "Ferma il logging prima di cambiare cartella")
     path = os.path.expanduser(body.path.strip())
     if not path:
-        raise HTTPException(400, "Percorso vuoto")
+        _http_error(400, "empty_path", "Percorso vuoto")
     if not os.path.isdir(path):
-        raise HTTPException(400, f"Cartella non trovata: {path}")
+        _http_error(400, "dir_not_found", f"Cartella non trovata: {path}", path)
     if not os.access(path, os.W_OK):
-        raise HTTPException(400, f"Cartella non scrivibile: {path}")
+        _http_error(400, "dir_not_writable", f"Cartella non scrivibile: {path}", path)
     DATA_DIR = path
     with state_lock:
         state["log_dir"] = DATA_DIR
