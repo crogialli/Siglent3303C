@@ -1,87 +1,87 @@
 # Siglent3303C
 
-Interfaccia web per il controllo remoto via USB/SCPI dell'alimentatore
-programmabile Siglent SPD3303C — monitoraggio in tempo reale, comando di
-tensione/corrente, LOCK/SERIE/PARALLELO, data logging. Bilingue (IT/EN).
+🇬🇧 English (this page) | 🇮🇹 [Italiano](README.it.md)
 
-Lo SPD3303C espone comandi SCPI via USB (classe USBTMC): questa app parla
-direttamente con lo strumento via `pyvisa`/`libusb`, senza bisogno di
-NI-VISA né del software Windows-only fornito da Siglent (EasyPower).
+Web interface for remote USB/SCPI control of the Siglent SPD3303C
+programmable power supply — real-time monitoring, voltage/current
+control, LOCK/SERIES/PARALLEL, data logging. Bilingual UI (IT/EN).
 
-## Installazione e avvio
+The SPD3303C exposes SCPI commands over USB (USBTMC class): this app
+talks to the instrument directly via `pyvisa`/`libusb`, no need for
+NI-VISA or the Windows-only software Siglent ships (EasyPower).
 
-Due modi per usarlo, entrambi mono-comando ed entrambi eseguono
-esattamente lo stesso codice (`app.py`/`spd3303c.py`): nessuna differenza
-di funzionalità o di correttezza tra i due, solo di comodità.
+## Installation and startup
 
-### Opzione A — Eseguibile standalone (nessun prerequisito)
+Two ways to use it, both single-command and both running exactly the
+same code (`app.py`/`spd3303c.py`): no functional or correctness
+difference between them, only convenience.
 
-Scarica il binario per la tua piattaforma dalla pagina delle
-[release](../../releases) e lancialo:
+### Option A — Standalone executable (no prerequisites)
+
+Download the binary for your platform from the
+[releases](../../releases) page and run it:
 
 ```bash
-chmod +x siglent3303c-<piattaforma>
-./siglent3303c-<piattaforma>
+chmod +x siglent3303c-<platform>
+./siglent3303c-<platform>
 ```
 
-Si apre da solo nel browser su `http://127.0.0.1:8420`.
+It opens itself in the browser at `http://127.0.0.1:8420`.
 
-**Linux**: la prima volta serve una regola udev per l'accesso USB senza
-privilegi di root (altrimenti l'app segnala "nessun dispositivo trovato"
-anche se lo strumento è collegato):
+**Linux**: the first time, you need a udev rule for USB access without
+root privileges (otherwise the app reports "no device found" even
+though the instrument is connected):
 
 ```bash
 sudo cp udev/99-siglent-spd3303.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules && sudo udevadm trigger
 ```
 
-Poi scollega e ricollega l'alimentatore (o riavvia).
+Then unplug and replug the power supply (or reboot).
 
-**macOS**: essendo un binario non firmato (nessun certificato Apple
-Developer), Gatekeeper lo bloccherà al primo avvio. Nel Finder, tasto
-destro sul file → "Apri" → confermare "Apri comunque" (una sola volta).
+**macOS**: since it's an unsigned binary (no Apple Developer
+certificate), Gatekeeper will block it on first launch. In Finder,
+right-click the file → "Open" → confirm "Open Anyway" (once).
 
-### Opzione B — Da sorgente (richiede solo Python 3)
+### Option B — From source (requires only Python 3)
 
-Se hai già Python 3 installato, o vuoi leggere/modificare il codice, o
-usi una piattaforma senza binario precompilato (es. ARM 32-bit):
+If you already have Python 3 installed, or want to read/modify the
+code, or use a platform without a prebuilt binary (e.g. 32-bit ARM):
 
 ```bash
 ./run.sh
 ```
 
-Alla prima esecuzione crea da solo un virtualenv (`.venv`) e installa le
-dipendenze da `requirements.txt`; alle volte successive le riusa e
-riparte subito. Nessun altro prerequisito oltre a Python 3.
+On first run it creates its own virtualenv (`.venv`) and installs
+dependencies from `requirements.txt`; on later runs it reuses them and
+starts right away. No prerequisite other than Python 3.
 
-## Compilare il proprio eseguibile
+## Building your own executable
 
 ```bash
 ./build.sh
 ```
 
-Crea `dist/siglent3303c-<os>-<arch>`. PyInstaller non compila in modo
-incrociato: va eseguito separatamente su ogni piattaforma di destinazione
-(una volta su Mac per il binario Mac, una volta su Linux/Raspberry Pi per
-quello Linux/ARM, ecc.). Su macOS richiede un Python compilato con
-libreria condivisa (`--enable-shared`/`--enable-framework`) — quello di
-Homebrew funziona, uno da pyenv spesso no.
+Creates `dist/siglent3303c-<os>-<arch>`. PyInstaller does not
+cross-compile: it must be run separately on each target platform (once
+on a Mac for the Mac binary, once on Linux/Raspberry Pi for the
+Linux/ARM one, etc.). On macOS it requires a Python built with a shared
+library (`--enable-shared`/`--enable-framework`) — Homebrew's Python
+works, one from pyenv often doesn't.
 
-## Note tecniche
+## Technical notes
 
-- Il firmware non è pienamente conforme USBTMC: senza impostare
-  esplicitamente `read_termination`/`write_termination = '\n'` su pyvisa,
-  le query vanno in timeout; serve inoltre un delay minimo (~45ms) tra
-  scrittura e lettura, altrimenti letture consecutive rischiano di
-  desincronizzarsi (una risposta arrivata in ritardo viene letta dalla
-  query successiva).
-- Nessun comando SCPI esiste per comandare più canali contemporaneamente
-  in modo davvero simultaneo (verificato: `*TRG` non è implementato,
-  nessun'altra documentazione Siglent lo menziona) — il tasto fisico
-  "tutte le uscite" dello strumento è realizzato solo in firmware.
-- CH2 segue automaticamente i setpoint di CH1 in modalità Series/Parallel
-  (verificato sull'hardware); CH3 (uscita fissa) non è leggibile via USB,
-  solo comandabile in ON/OFF.
-- Bit di stato non documentati nel manuale, scoperti empiricamente: lo
-  stato di LOCK della tastiera compare come bit `0x0400` in
-  `SYSTem:STATus?`.
+- The firmware isn't fully USBTMC-compliant: without explicitly setting
+  `read_termination`/`write_termination = '\n'` on pyvisa, queries time
+  out; a minimum delay (~45ms) between write and read is also needed,
+  otherwise consecutive reads risk desyncing (a late response gets read
+  by the next, unrelated query).
+- No SCPI command exists to command multiple channels truly
+  simultaneously (verified: `*TRG` isn't implemented, no other Siglent
+  documentation mentions it) — the instrument's physical "all outputs"
+  key is implemented in firmware only.
+- CH2 automatically follows CH1's setpoints in Series/Parallel mode
+  (verified on real hardware); CH3 (fixed output) isn't readable over
+  USB, only commandable ON/OFF.
+- Undocumented status bits discovered empirically: the keyboard LOCK
+  state shows up as bit `0x0400` in `SYSTem:STATus?`.
