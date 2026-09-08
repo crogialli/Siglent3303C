@@ -8,7 +8,13 @@ Lo SPD3303C espone comandi SCPI via USB (classe USBTMC): questa app parla
 direttamente con lo strumento via `pyvisa`/`libusb`, senza bisogno di
 NI-VISA né del software Windows-only fornito da Siglent (EasyPower).
 
-## Uso rapido (eseguibile standalone — nessun prerequisito)
+## Installazione e avvio
+
+Due modi per usarlo, entrambi mono-comando ed entrambi eseguono
+esattamente lo stesso codice (`app.py`/`spd3303c.py`): nessuna differenza
+di funzionalità o di correttezza tra i due, solo di comodità.
+
+### Opzione A — Eseguibile standalone (nessun prerequisito)
 
 Scarica il binario per la tua piattaforma dalla pagina delle
 [release](../../releases) e lancialo:
@@ -35,14 +41,18 @@ Poi scollega e ricollega l'alimentatore (o riavvia).
 Developer), Gatekeeper lo bloccherà al primo avvio. Nel Finder, tasto
 destro sul file → "Apri" → confermare "Apri comunque" (una sola volta).
 
-## Uso da sorgente
+### Opzione B — Da sorgente (richiede solo Python 3)
 
-Richiede solo Python 3 installato — venv e dipendenze vengono creati in
-automatico al primo avvio:
+Se hai già Python 3 installato, o vuoi leggere/modificare il codice, o
+usi una piattaforma senza binario precompilato (es. ARM 32-bit):
 
 ```bash
 ./run.sh
 ```
+
+Alla prima esecuzione crea da solo un virtualenv (`.venv`) e installa le
+dipendenze da `requirements.txt`; alle volte successive le riusa e
+riparte subito. Nessun altro prerequisito oltre a Python 3.
 
 ## Compilare il proprio eseguibile
 
