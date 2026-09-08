@@ -7,8 +7,22 @@ write_termination espliciti a '\\n', le query vanno in timeout.
 
 import threading
 import time
+import warnings
 
 import pyvisa
+
+# Tre warning cosmetici e innocui, sempre presenti con questo strumento/stack:
+# - "read string doesn't end with termination characters": pyvisa lo emette
+#   come sanity-check sul testo decodificato, ma la vera fine del messaggio
+#   USBTMC è già rilevata correttamente a un livello più basso (flag EOM);
+#   il nostro .strip() pulisce comunque il risultato in entrambi i casi.
+# - le due righe "TCPIP..." arrivano dalla scoperta risorse di pyvisa-py per
+#   interfacce che non usiamo mai (accediamo sempre via USB con una resource
+#   string esplicita), e suggeriscono pacchetti opzionali (psutil, zeroconf)
+#   non necessari per questo progetto.
+warnings.filterwarnings("ignore", message="read string doesn't end with termination characters")
+warnings.filterwarnings("ignore", message="TCPIP:instr resource discovery.*")
+warnings.filterwarnings("ignore", message="TCPIP::hislip.*")
 
 VOLTAGE_MAX = 32.0
 CURRENT_MAX = 3.2
@@ -45,10 +59,19 @@ class SPD3303C:
             self._rm = rm
             self._inst = inst
             try:
-                self.idn = self._query_locked("*IDN?")
+                idn = self._query_locked("*IDN?")
             except Exception as e:
                 self.invalidate()
                 raise SPD3303CError(f"Errore comunicazione durante la connessione: {e}") from e
+            # Guardia contro la desincronizzazione USBTMC (vedi invalidate()):
+            # se la risposta letta non è davvero quella di *IDN? (es. una
+            # SYSTem:STATus? o una misura letta per errore), l'IDN di questo
+            # strumento contiene sempre "Siglent" — qualsiasi altra cosa è
+            # un sintomo del bug, non un dato valido da accettare.
+            if "siglent" not in idn.lower():
+                self.invalidate()
+                raise SPD3303CError(f"Risposta inattesa a '*IDN?': {idn!r}")
+            self.idn = idn
             self.connected = True
 
     def _write_locked(self, cmd):

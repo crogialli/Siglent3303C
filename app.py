@@ -152,6 +152,19 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
+@app.middleware("http")
+async def no_cache_static(request, call_next):
+    """Il frontend è servito dallo stesso processo ed è in evoluzione
+    continua durante lo sviluppo: senza questo, il browser può continuare
+    a usare una versione cachata di app.js/index.html anche dopo un
+    refresh normale, mentre i comandi API (sempre freschi) non ne hanno
+    bisogno."""
+    response = await call_next(request)
+    if not request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 @app.get("/api/status")
 def api_status():
     with state_lock:
