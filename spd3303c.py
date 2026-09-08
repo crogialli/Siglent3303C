@@ -11,6 +11,21 @@ import warnings
 
 import pyvisa
 
+# Precarica il backend libusb incluso in libusb-package (binari precompilati
+# per Mac/Linux/Windows, x86_64 e arm64/aarch64) prima che pyusb/pyvisa-py
+# tentino la propria ricerca automatica sul sistema. usb.backend.libusb1
+# mantiene un cache a livello di modulo: chiamando get_backend() una volta
+# qui, ogni chiamata successiva di pyvisa-py (che non specifica un backend)
+# riusa questo stesso oggetto invece di cercare una libusb di sistema — la
+# ragione per cui l'eseguibile standalone non richiede libusb preinstallata.
+try:
+    import libusb_package
+    import usb.backend.libusb1
+
+    usb.backend.libusb1.get_backend(find_library=libusb_package.find_library)
+except Exception:
+    pass  # su sistemi dove libusb è già installata, pyusb la troverà da solo
+
 # Tre warning cosmetici e innocui, sempre presenti con questo strumento/stack:
 # - "read string doesn't end with termination characters": pyvisa lo emette
 #   come sanity-check sul testo decodificato, ma la vera fine del messaggio

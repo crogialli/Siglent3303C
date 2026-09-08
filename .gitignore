@@ -1,5 +1,9 @@
 .venv/
+.venv-build/
 __pycache__/
 *.pyc
 data/*.csv
 .DS_Store
+build/
+dist/
+*.spec

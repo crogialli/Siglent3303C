@@ -7,6 +7,7 @@ Uso:
 
 import csv
 import os
+import sys
 import threading
 import time
 import webbrowser
@@ -22,8 +23,14 @@ from pydantic import BaseModel, Field
 from spd3303c import SPD3303C, SPD3303CError, VOLTAGE_MAX, CURRENT_MAX
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(APP_DIR, "data")
-STATIC_DIR = os.path.join(APP_DIR, "static")
+
+# Da PyInstaller (--onefile): i file statici sono estratti in una cartella
+# temporanea (sys._MEIPASS) diversa a ogni avvio, quindi vanno letti da lì;
+# i log invece non possono vivere né lì (sparisce alla chiusura) né dentro
+# l'eseguibile stesso — usiamo sempre una cartella stabile nella home
+# dell'utente, sia in versione sorgente che pacchettizzata.
+STATIC_DIR = os.path.join(getattr(sys, "_MEIPASS", APP_DIR), "static")
+DATA_DIR = os.path.join(os.path.expanduser("~"), "Siglent3303C_logs")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 FAST_POLL_PAUSE_S = 0.02  # pausa tra un ciclo di misura e il successivo (oltre al tempo delle query stesse)
