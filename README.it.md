@@ -12,6 +12,8 @@ Lo SPD3303C espone comandi SCPI via USB (classe USBTMC): questa app parla
 direttamente con lo strumento via `pyvisa`/`libusb`, senza bisogno di
 NI-VISA né del software Windows-only fornito da Siglent (EasyPower).
 
+<p align="center"><img src="docs/screenshot-it.png" alt="Screenshot del pannello comandi" width="700"></p>
+
 ## Installazione e avvio
 
 Due modi per usarlo, entrambi mono-comando ed entrambi eseguono
