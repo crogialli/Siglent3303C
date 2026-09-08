@@ -1,0 +1,16 @@
+# Consente l'accesso USB allo Siglent SPD3303C senza privilegi di root.
+#
+# Su Linux il nodo del dispositivo USB è di proprietà root:root con
+# permessi di sola lettura per chiunque altro (crw-rw-r--): senza questa
+# regola l'app non riesce ad apire il device (compare come "nessun
+# dispositivo USBTMC trovato" anche se lsusb lo vede correttamente).
+#
+# Installazione (una tantum):
+#   sudo cp udev/99-siglent-spd3303.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules
+#   sudo udevadm trigger
+# Poi scollega e ricollega l'alimentatore (o riavvia).
+#
+# idVendor/idProduct = STMicroelectronics 0483:7540, il chip USB-SCPI
+# usato dalla serie SPD3303.
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="7540", MODE="0666"
